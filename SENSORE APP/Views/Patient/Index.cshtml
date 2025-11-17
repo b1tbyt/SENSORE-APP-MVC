@@ -1,0 +1,103 @@
+﻿@model SENSORE_APP.Models.PatientDashboardViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Patient Dashboard";
+}
+
+<h1 class="mb-4">Patient Dashboard</h1>
+
+<div class="row">
+    <div class="col-md-8 mb-3">
+        <div class="card">
+            <div class="card-header">Live Pressure Map</div>
+            <div class="card-body p-1">
+                <table class="heatmap-table" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:512px;">
+                    @for (int i = 0; i < Model.HeatmapSize; i++)
+                    {
+                        <tr>
+                            @for (int j = 0; j < Model.HeatmapSize; j++)
+                            {
+                                <td style="width:@(Model.CellPixelSize)px;height:@(Model.CellPixelSize)px;background-color:@Model.GetHeatmapColor(i, j); border:1px solid #eee;"></td>
+                            }
+                        </tr>
+                    }
+                </table>
+                <p class="mt-2 mb-0"><small>Darker red indicates higher pressure.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card mb-3">
+            <div class="card-header">Historical Data</div>
+            <div class="card-body">
+                <form method="get" class="mb-2">
+                    <div class="btn-group btn-group-sm">
+                        @foreach (var opt in Model.TimeframeOptions)
+                        {
+                            <button type="submit" name="timeframe" value="@opt" class="btn @(Model.SelectedTimeframe == opt ? "btn-primary" : "btn-outline-primary")">@opt</button>
+                        }
+                    </div>
+                </form>
+                <canvas id="pressureChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Live Risk Status</div>
+            <div class="card-body">
+                <h3>@Model.RiskScore / 10</h3>
+                <div class="progress">
+                    <div class="progress-bar"
+                         role="progressbar"
+                         style="width:@(Model.RiskScore * 10)%; background-color:@Model.GetRiskColor();">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mt-3">
+            <div class="card-header">Add a Note</div>
+            <div class="card-body">
+                @if (ViewBag.NoteConfirmation != null)
+                {
+                    <div class="alert alert-success">@ViewBag.NoteConfirmation</div>
+                }
+                <form asp-action="AddNote" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="SelectedTimeframe" value="@Model.SelectedTimeframe" />
+                    <div class="mb-3">
+                        <textarea name="NewNote" class="form-control" rows="3" placeholder="Enter your note here…"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const labels = @Html.Raw(JsonSerializer.Serialize(Model.Timestamps));
+    const peak = @Html.Raw(JsonSerializer.Serialize(Model.PeakPressureIndices));
+    const area = @Html.Raw(JsonSerializer.Serialize(Model.ContactAreaPercentages));
+
+    const ctx = document.getElementById('pressureChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels.map(t => new Date(t).toLocaleString()),
+            datasets: [
+                { label: 'Peak Pressure Index', data: peak, borderColor: '#007bff', fill: false },
+                { label: 'Contact Area (%)', data: area, borderColor: '#28a745', fill: false }
+            ]
+        },
+        options: {
+            scales: { y: { beginAtZero: true } },
+            maintainAspectRatio: false
+        }
+    });
+</script>                   
