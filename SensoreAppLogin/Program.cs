@@ -22,7 +22,7 @@ app.UseAuthorization();
 
 app.MapGet("/", context =>
 {
-    context.Response.Redirect("/Login");
+    context.Response.Redirect("/Welcome");
     return Task.CompletedTask;
 });
 
