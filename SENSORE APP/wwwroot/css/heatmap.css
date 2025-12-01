@@ -1,0 +1,65 @@
+/* Live pressure map styles */
+.heatmap-table {
+    user-select: none;
+}
+
+.heatmap-table td {
+    transition: background-color 0.15s ease-out;
+    cursor: pointer;
+}
+
+.heatmap-table td:hover {
+    opacity: 0.8;
+    outline: 2px solid rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth animations for pressure changes */
+@keyframes pressurePulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* High-pressure indicator */
+.high-pressure-cell {
+    animation: pressurePulse 1s infinite;
+}
+
+/* Dashboard container adjustments */
+.container-fluid {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Chart styling */
+#pressureChart {
+    border-radius: 4px;
+}
+
+/* Responsive heatmap */
+@media (max-width: 768px) {
+    .heatmap-table td {
+        height: 12px !important;
+        width: 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .heatmap-table td {
+        height: 10px !important;
+        width: 10px !important;
+    }
+}
