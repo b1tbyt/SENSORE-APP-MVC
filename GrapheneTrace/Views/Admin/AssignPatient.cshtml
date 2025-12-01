@@ -1,0 +1,192 @@
+﻿@model GrapheneTrace.Models.PatientClinicianAssignmentViewModel
+@{
+    ViewData["Title"] = "Assign Patient to Clinician";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-link me-2 text-primary"></i>Assign Patient to Clinician
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Assign Patient</li>
+                </ol>
+            </nav>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Assignment Form -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-user-plus me-2"></i>New Assignment
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Instructions:</strong> Select a patient and a clinician to create an assignment.
+                        This will allow the clinician to monitor and manage the patient's pressure ulcer prevention care.
+                    </div>
+
+                    <form asp-action="AssignPatient" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Patient Selection -->
+                        <div class="mb-4">
+                            <label asp-for="PatientId" class="form-label">
+                                <i class="fas fa-user-injured me-2 text-success"></i>Select Patient <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="PatientId" class="form-select form-select-lg" id="patientSelect">
+                                <option value="">-- Choose a Patient --</option>
+                                @if (ViewBag.Patients != null)
+                                {
+                                    @foreach (var patient in ViewBag.Patients)
+                                    {
+                                        <option value="@patient.UserId">@patient.FullName</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="PatientId" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Clinician Selection -->
+                        <div class="mb-4">
+                            <label asp-for="ClinicianId" class="form-label">
+                                <i class="fas fa-user-md me-2 text-primary"></i>Select Clinician <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="ClinicianId" class="form-select form-select-lg" id="clinicianSelect">
+                                <option value="">-- Choose a Clinician --</option>
+                                @if (ViewBag.Clinicians != null)
+                                {
+                                    @foreach (var clinician in ViewBag.Clinicians)
+                                    {
+                                        <option value="@clinician.UserId">@clinician.FullName</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="ClinicianId" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label asp-for="Notes" class="form-label">
+                                <i class="fas fa-sticky-note me-2 text-warning"></i>Assignment Notes (Optional)
+                            </label>
+                            <textarea asp-for="Notes" class="form-control" rows="3"
+                                      placeholder="Enter any relevant notes about this assignment (e.g., reason for assignment, special care instructions)"></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-link me-2"></i>Create Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Info Sidebar -->
+        <div class="col-lg-4 mb-4">
+            <!-- Statistics Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white py-3">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-chart-bar me-2"></i>Quick Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span><i class="fas fa-user-injured me-2 text-success"></i>Available Patients</span>
+                        <span class="badge bg-success fs-6">
+                            @(ViewBag.Patients != null ? ((IEnumerable<dynamic>)ViewBag.Patients).Count() : 0)
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-user-md me-2 text-primary"></i>Available Clinicians</span>
+                        <span class="badge bg-primary fs-6">
+                            @(ViewBag.Clinicians != null ? ((IEnumerable<dynamic>)ViewBag.Clinicians).Count() : 0)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card shadow">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-question-circle me-2"></i>Need Help?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>What is a Patient-Clinician Assignment?</h6>
+                    <p class="small text-muted">
+                        An assignment links a patient to a healthcare professional (clinician) who will
+                        be responsible for monitoring their pressure ulcer risk and providing care.
+                    </p>
+                    <hr>
+                    <h6>Can a patient have multiple clinicians?</h6>
+                    <p class="small text-muted mb-0">
+                        Yes! A patient can be assigned to multiple clinicians for comprehensive care
+                        (e.g., a wound care specialist and a geriatric care specialist).
+                    </p>
+                </div>
+                <div class="card-footer bg-light">
+                    <a asp-action="ViewAssignments" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-list me-2"></i>View All Assignments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 for enhanced dropdowns (if available)
+            if ($.fn.select2) {
+                $('#patientSelect, #clinicianSelect').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Search...',
+                    allowClear: true
+                });
+            }
+        });
+    </script>
+}

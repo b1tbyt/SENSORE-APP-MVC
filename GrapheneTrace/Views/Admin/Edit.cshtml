@@ -1,0 +1,257 @@
+﻿@model GrapheneTrace.Models.UserEditViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-user-edit me-2 text-primary"></i>Edit User
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Edit User</li>
+                </ol>
+            </nav>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white py-3">
+            <h6 class="m-0 fw-bold">
+                <i class="fas fa-edit me-2"></i>Editing: @Model.FirstName @Model.LastName
+                <span class="badge @(Model.Role == "Admin" ? "bg-danger" : Model.Role == "Clinician" ? "bg-info" : "bg-success") ms-2">
+                    @Model.Role
+                </span>
+            </h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="Role" />
+
+                <!-- Validation Summary -->
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <!-- Basic Information Section -->
+                <h5 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-id-card me-2 text-primary"></i>Basic Information
+                </h5>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="FirstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                        <input asp-for="FirstName" class="form-control" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="LastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                        <input asp-for="LastName" class="form-control" />
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" type="email" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveSwitch" style="transform: scale(1.5);">
+                            <label class="form-check-label ms-2" for="isActiveSwitch">
+                                <span id="statusLabel" class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                                    @(Model.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Change Section -->
+                <h5 class="border-bottom pb-2 mb-3 mt-4">
+                    <i class="fas fa-lock me-2 text-warning"></i>Change Password (Optional)
+                </h5>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Leave password fields blank to keep the current password.
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="NewPassword" class="form-label">New Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-key"></i></span>
+                            <input asp-for="NewPassword" class="form-control" type="password" id="newPassword" />
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('newPassword')">
+                                <i class="fas fa-eye" id="newPassword-icon"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmNewPassword" class="form-label">Confirm New Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-key"></i></span>
+                            <input asp-for="ConfirmNewPassword" class="form-control" type="password" id="confirmNewPassword" />
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmNewPassword')">
+                                <i class="fas fa-eye" id="confirmNewPassword-icon"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmNewPassword" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <!-- Patient-Specific Fields -->
+                @if (Model.Role == "Patient")
+                {
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="fas fa-heartbeat me-2 text-success"></i>Patient Information
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="MedicalCondition" class="form-label">Medical Condition</label>
+                            <textarea asp-for="MedicalCondition" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="MobilityLevel" class="form-label">Mobility Level</label>
+                            <select asp-for="MobilityLevel" class="form-select">
+                                <option value="Normal">Normal - Fully mobile</option>
+                                <option value="Limited">Limited - Some assistance needed</option>
+                                <option value="Wheelchair">Wheelchair - Uses wheelchair</option>
+                                <option value="Bed-bound">Bed-bound - Unable to leave bed</option>
+                            </select>
+                        </div>
+                    </div>
+                }
+
+                <!-- Clinician-Specific Fields -->
+                @if (Model.Role == "Clinician")
+                {
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="fas fa-stethoscope me-2 text-primary"></i>Clinician Information
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="LicenseNumber" class="form-label">License Number</label>
+                            <input asp-for="LicenseNumber" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Specialization" class="form-label">Specialization</label>
+                            <select asp-for="Specialization" class="form-select">
+                                <option value="General">General Practice</option>
+                                <option value="Wound Care">Wound Care</option>
+                                <option value="Geriatric Care">Geriatric Care</option>
+                                <option value="Dermatology">Dermatology</option>
+                                <option value="Internal Medicine">Internal Medicine</option>
+                                <option value="Nursing">Nursing</option>
+                                <option value="Physical Therapy">Physical Therapy</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Department" class="form-label">Department</label>
+                            <select asp-for="Department" class="form-select">
+                                <option value="General Medicine">General Medicine</option>
+                                <option value="Dermatology">Dermatology</option>
+                                <option value="Geriatrics">Geriatrics</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Outpatient">Outpatient</option>
+                                <option value="Home Care">Home Care</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ContactPhone" class="form-label">Contact Phone</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                <input asp-for="ContactPhone" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Admin-Specific Fields -->
+                @if (Model.Role == "Admin")
+                {
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="fas fa-shield-alt me-2 text-danger"></i>Administrator Information
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="AccessLevel" class="form-label">Access Level</label>
+                            <select asp-for="AccessLevel" class="form-select">
+                                <option value="Standard">Standard - Basic admin functions</option>
+                                <option value="Full">Full - Complete system access</option>
+                                <option value="Super">Super Admin - All permissions</option>
+                            </select>
+                        </div>
+                    </div>
+                }
+
+                <!-- Submit Buttons -->
+                <div class="border-top pt-4 mt-4">
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Delete" asp-route-id="@Model.UserId" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-2"></i>Delete User
+                        </a>
+                        <div class="d-flex gap-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(inputId + '-icon');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Update status label when toggle changes
+        document.getElementById('isActiveSwitch').addEventListener('change', function() {
+            var label = document.getElementById('statusLabel');
+            if (this.checked) {
+                label.textContent = 'Active';
+                label.className = 'badge bg-success';
+            } else {
+                label.textContent = 'Inactive';
+                label.className = 'badge bg-secondary';
+            }
+        });
+    </script>
+}

@@ -1,0 +1,378 @@
+﻿@model IEnumerable<GrapheneTrace.Models.User>
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Success/Error Messages -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Sensore Admin Dashboard</h1>
+    <div class="text-end">
+        <span class="text-muted me-2">Welcome, <strong>@User.Identity?.Name ?? "Administrator"</strong></span>
+        <a href="#" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-sign-out-alt me-1"></i>Logout
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards Row -->
+<div class="row mb-4">
+    <!-- Total Patients Card -->
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-start border-primary border-4 h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-primary fw-bold small mb-1">Total Patients</div>
+                        <div class="h3 mb-0 fw-bold">@ViewBag.TotalPatients</div>
+                    </div>
+                    <div class="text-primary opacity-50">
+                        <i class="fas fa-user-injured fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinicians Card -->
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-start border-success border-4 h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-success fw-bold small mb-1">Clinicians</div>
+                        <div class="h3 mb-0 fw-bold">@ViewBag.TotalClinicians</div>
+                    </div>
+                    <div class="text-success opacity-50">
+                        <i class="fas fa-user-md fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Admins Card -->
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-start border-warning border-4 h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-warning fw-bold small mb-1">System Admins</div>
+                        <div class="h3 mb-0 fw-bold">@ViewBag.TotalAdmins</div>
+                    </div>
+                    <div class="text-warning opacity-50">
+                        <i class="fas fa-cog fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts Card -->
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-start border-danger border-4 h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-danger fw-bold small mb-1">Active Pressure Alerts</div>
+                        <div class="h3 mb-0 fw-bold">@ViewBag.ActiveAlerts</div>
+                    </div>
+                    <div class="text-danger opacity-50">
+                        <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons Row -->
+<div class="mb-4">
+    <a asp-action="Create" class="btn btn-success me-2">
+        <i class="fas fa-user-plus me-2"></i>Add New User
+    </a>
+    <a asp-action="AssignPatient" class="btn btn-outline-primary me-2">
+        <i class="fas fa-link me-2"></i>Assign Patient to Clinician
+    </a>
+    <a asp-action="ViewAssignments" class="btn btn-outline-info">
+        <i class="fas fa-list me-2"></i>View All Assignments
+    </a>
+</div>
+
+<!-- User Management Section -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center bg-dark text-white">
+        <h6 class="m-0 fw-bold">
+            <i class="fas fa-users me-2"></i>User Management
+        </h6>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
+                    id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                Filter by Role
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+                <li><a class="dropdown-item filter-role" href="#" data-role="all">All Users</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item filter-role" href="#" data-role="Admin">Admins</a></li>
+                <li><a class="dropdown-item filter-role" href="#" data-role="Clinician">Clinicians</a></li>
+                <li><a class="dropdown-item filter-role" href="#" data-role="Patient">Patients</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" id="usersTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Date Created</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr data-role="@user.Role">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2 bg-@(user.Role == "Admin" ? "danger" : user.Role == "Clinician" ? "primary" : "success") text-white">
+                                        @user.FirstName[0]@user.LastName[0]
+                                    </div>
+                                    <div>
+                                        <strong>@(user.Role == "Clinician" ? "Dr. " : "")@user.FirstName @user.LastName</strong>
+                                        @if (user.Role != "Admin")
+                                        {
+                                            <br>
+                                    
+                                            <small class="text-muted">@(user.Role == "Clinician" ? "Medical Professional" : "Healthcare Patient")</small>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@user.Email</td>
+                            <td>
+                                @{
+                                    var badgeClass = user.Role switch
+                                    {
+                                        "Admin" => "bg-danger",
+                                        "Clinician" => "bg-primary",
+                                        "Patient" => "bg-success",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @badgeClass">@user.Role</span>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-times-circle me-1"></i>Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Edit Button -->
+                                    <a asp-action="Edit" asp-route-id="@user.UserId"
+                                       class="btn btn-outline-primary" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <!-- View Details Button -->
+                                    <a asp-action="Details" asp-route-id="@user.UserId"
+                                       class="btn btn-outline-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <!-- Delete Button -->
+                                    <a asp-action="Delete" asp-route-id="@user.UserId"
+                                       class="btn btn-outline-danger" title="Delete User">
+                                        <i class="fas fa-user-minus"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Recent Registrations & System Overview -->
+<div class="row">
+    <!-- Recent User Registrations -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3 bg-dark text-white">
+                <h6 class="m-0 fw-bold">
+                    <i class="fas fa-user-clock me-2"></i>Recent User Registrations
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentUsers != null)
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var user in (IEnumerable<GrapheneTrace.Models.User>)ViewBag.RecentUsers)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-3 bg-@(user.Role == "Admin" ? "danger" : user.Role == "Clinician" ? "primary" : "success") text-white">
+                                        @user.FirstName[0]@user.LastName[0]
+                                    </div>
+                                    <div>
+                                        <strong>@user.FirstName @user.LastName</strong><br>
+                                        <small class="text-muted">@user.Email</small><br>
+                                        <small class="text-muted">Joined @user.CreatedAt.ToString("MMM dd, yyyy 'at' hh:mm tt")</small>
+                                    </div>
+                                </div>
+                                <span class="badge @(user.Role == "Admin" ? "bg-danger" : user.Role == "Clinician" ? "bg-primary" : "bg-success")">
+                                    @user.Role
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3 bg-dark text-white d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">
+                    <i class="fas fa-chart-pie me-2"></i>System Overview
+                </h6>
+                <span class="badge bg-success">Operational</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-database me-2 text-primary"></i>Database Status</span>
+                        <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>Connected
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-users me-2 text-info"></i>Total Users</span>
+                        <strong>@(ViewBag.TotalPatients + ViewBag.TotalClinicians + ViewBag.TotalAdmins)</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-clock me-2 text-warning"></i>System Uptime</span>
+                        <strong>24/7 Operational</strong>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-cog me-2"></i>System Settings
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        /* Avatar Circle Styling */
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        /* Card hover effect */
+        .card {
+            transition: transform 0.2s ease-in-out;
+        }
+
+            .card:hover {
+                transform: translateY(-2px);
+            }
+
+        /* Table row hover */
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        /* Action buttons */
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable for enhanced table features
+            var table = $('#usersTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                order: [[4, 'desc']], // Sort by date created descending
+                columnDefs: [
+                    { orderable: false, targets: 5 } // Disable sorting on Actions column
+                ],
+                language: {
+                    search: "<i class='fas fa-search'></i>",
+                    searchPlaceholder: "Search users..."
+                }
+            });
+
+            // Role filter functionality
+            $('.filter-role').click(function(e) {
+                e.preventDefault();
+                var role = $(this).data('role');
+
+                if (role === 'all') {
+                    table.column(2).search('').draw();
+                } else {
+                    table.column(2).search(role).draw();
+                }
+
+                // Update dropdown button text
+                $('#filterDropdown').text(role === 'all' ? 'Filter by Role' : role + 's');
+            });
+
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+        });
+    </script>
+}
