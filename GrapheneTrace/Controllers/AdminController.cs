@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using GrapheneTrace.Data;
 using GrapheneTrace.Models;
@@ -7,97 +8,259 @@ using System.Text;
 
 namespace GrapheneTrace.Controllers
 {
-    /// <summary>
-    /// AdminController handles all administrative operations including:
-    /// - Dashboard display with user statistics
-    /// - User CRUD operations (Create, Read, Update, Delete)
-    /// - Patient-Clinician assignment management
-    /// </summary>
+ 
+    [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        #region Private Fields and Constants
 
-        // Constructor: Inject database context via dependency injection
-        public AdminController(ApplicationDbContext context)
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<AdminController> _logger;
+
+        // Pagination constants - easily configurable
+        private const int DEFAULT_PAGE_SIZE = 10;
+        private const int MAX_PAGE_SIZE = 50;
+
+        #endregion
+
+        #region Constructor
+
+       
+        public AdminController(ApplicationDbContext context, ILogger<AdminController> logger)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
+        #endregion
 
         #region Dashboard
 
-        /// <summary>
-        /// GET: Admin/Index
-        /// Displays the main admin dashboard with statistics and user list
-        /// </summary>
-        public async Task<IActionResult> Index()
+       
+        public async Task<IActionResult> Index(
+            string searchString = "",
+            string roleFilter = "",
+            string statusFilter = "",
+            string sortOrder = "",
+            int pageNumber = 1,
+            int pageSize = DEFAULT_PAGE_SIZE)
         {
-            // Gather statistics for dashboard cards
-            ViewBag.TotalPatients = await _context.Patients.CountAsync(p => p.IsActive);
-            ViewBag.TotalClinicians = await _context.Clinicians.CountAsync(c => c.IsActive);
-            ViewBag.TotalAdmins = await _context.Admins.CountAsync(a => a.IsActive);
-            ViewBag.ActiveAlerts = 0; // Placeholder for future alert system
+            try
+            {
+                // Log dashboard access for audit trail
+                _logger.LogInformation("Admin dashboard accessed by {User} at {Time}",
+                    User.Identity?.Name ?? "Unknown", DateTime.Now);
 
-            // Get all active users for the management table
-            var users = await _context.Users
-                .Where(u => u.IsActive)
-                .OrderByDescending(u => u.CreatedAt)
+                // Validate pagination parameters
+                pageSize = Math.Clamp(pageSize, 1, MAX_PAGE_SIZE);
+                pageNumber = Math.Max(1, pageNumber);
+
+                // Store filter values for view (maintains state on postback)
+                ViewBag.CurrentSearch = searchString;
+                ViewBag.CurrentRole = roleFilter;
+                ViewBag.CurrentStatus = statusFilter;
+                ViewBag.CurrentSort = sortOrder;
+                ViewBag.CurrentPageSize = pageSize;
+
+                // Store sort parameters for column header links
+                ViewBag.NameSortParam = sortOrder == "name_asc" ? "name_desc" : "name_asc";
+                ViewBag.EmailSortParam = sortOrder == "email_asc" ? "email_desc" : "email_asc";
+                ViewBag.RoleSortParam = sortOrder == "role_asc" ? "role_desc" : "role_asc";
+                ViewBag.DateSortParam = sortOrder == "date_asc" ? "date_desc" : "date_asc";
+
+              
+                ViewBag.TotalPatients = await _context.Patients.CountAsync(p => p.IsActive);
+                ViewBag.TotalClinicians = await _context.Clinicians.CountAsync(c => c.IsActive);
+                ViewBag.TotalAdmins = await _context.Admins.CountAsync(a => a.IsActive);
+                ViewBag.TotalAssignments = await _context.PatientClinicians.CountAsync();
+                ViewBag.ActiveAlerts = 0;
+
+                
+                IQueryable<User> usersQuery = _context.Users.AsQueryable();
+
+                // Apply search filter (searches name and email)
+                if (!string.IsNullOrWhiteSpace(searchString))
+                {
+                    string searchLower = searchString.ToLower().Trim();
+                    usersQuery = usersQuery.Where(u =>
+                        u.FirstName.ToLower().Contains(searchLower) ||
+                        u.LastName.ToLower().Contains(searchLower) ||
+                        u.Email.ToLower().Contains(searchLower) ||
+                        (u.FirstName + " " + u.LastName).ToLower().Contains(searchLower));
+                }
+
+                // Apply role filter
+                if (!string.IsNullOrWhiteSpace(roleFilter))
+                {
+                    usersQuery = usersQuery.Where(u => u.Role == roleFilter);
+                }
+
+                // Apply status filter
+                if (!string.IsNullOrWhiteSpace(statusFilter))
+                {
+                    bool isActive = statusFilter.ToLower() == "active";
+                    usersQuery = usersQuery.Where(u => u.IsActive == isActive);
+                }
+                else
+                {
+                    // Default: show only active users
+                    usersQuery = usersQuery.Where(u => u.IsActive);
+                }
+
+                usersQuery = sortOrder switch
+                {
+                    "name_asc" => usersQuery.OrderBy(u => u.FirstName).ThenBy(u => u.LastName),
+                    "name_desc" => usersQuery.OrderByDescending(u => u.FirstName).ThenByDescending(u => u.LastName),
+                    "email_asc" => usersQuery.OrderBy(u => u.Email),
+                    "email_desc" => usersQuery.OrderByDescending(u => u.Email),
+                    "role_asc" => usersQuery.OrderBy(u => u.Role),
+                    "role_desc" => usersQuery.OrderByDescending(u => u.Role),
+                    "date_asc" => usersQuery.OrderBy(u => u.CreatedAt),
+                    "date_desc" => usersQuery.OrderByDescending(u => u.CreatedAt),
+                    _ => usersQuery.OrderByDescending(u => u.CreatedAt)
+                };
+
+               
+                int totalItems = await usersQuery.CountAsync();
+                int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+                pageNumber = Math.Clamp(pageNumber, 1, Math.Max(1, totalPages));
+
+                ViewBag.CurrentPage = pageNumber;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.TotalItems = totalItems;
+                ViewBag.HasPreviousPage = pageNumber > 1;
+                ViewBag.HasNextPage = pageNumber < totalPages;
+
+                var users = await usersQuery
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                // Recent registrations
+                ViewBag.RecentUsers = await _context.Users
+                    .Where(u => u.IsActive)
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Take(5)
+                    .ToListAsync();
+
+                // Recent audit logs (if table exists)
+                try
+                {
+                    ViewBag.RecentAuditLogs = await _context.AuditLogs
+                        .OrderByDescending(a => a.Timestamp)
+                        .Take(10)
+                        .ToListAsync();
+                }
+                catch
+                {
+                    ViewBag.RecentAuditLogs = new List<AuditLog>();
+                }
+
+                return View(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading admin dashboard");
+                TempData["ErrorMessage"] = "An error occurred while loading the dashboard.";
+                return View(new List<User>());
+            }
+        }
+
+       
+        public async Task<IActionResult> SystemSettings()
+        {
+            _logger.LogInformation("System settings accessed by {User}", User.Identity?.Name);
+
+            ViewBag.DatabaseStatus = "Connected";
+            ViewBag.TotalUsers = await _context.Users.CountAsync();
+            ViewBag.ActiveUsers = await _context.Users.CountAsync(u => u.IsActive);
+            ViewBag.TotalAssignments = await _context.PatientClinicians.CountAsync();
+            ViewBag.SystemVersion = "1.0.0";
+            ViewBag.ServerTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            return View();
+        }
+
+    
+        public async Task<IActionResult> Reports()
+        {
+            _logger.LogInformation("Reports accessed by {User}", User.Identity?.Name);
+
+            ViewBag.TotalPatients = await _context.Patients.CountAsync();
+            ViewBag.ActivePatients = await _context.Patients.CountAsync(p => p.IsActive);
+            ViewBag.TotalClinicians = await _context.Clinicians.CountAsync();
+            ViewBag.ActiveClinicians = await _context.Clinicians.CountAsync(c => c.IsActive);
+            ViewBag.TotalAdmins = await _context.Admins.CountAsync();
+            ViewBag.TotalAssignments = await _context.PatientClinicians.CountAsync();
+
+            // Get registrations by month (last 6 months)
+            var sixMonthsAgo = DateTime.Now.AddMonths(-6);
+            ViewBag.MonthlyRegistrations = await _context.Users
+                .Where(u => u.CreatedAt >= sixMonthsAgo)
+                .GroupBy(u => new { u.CreatedAt.Year, u.CreatedAt.Month })
+                .Select(g => new { Month = g.Key.Month, Year = g.Key.Year, Count = g.Count() })
+                .OrderBy(x => x.Year).ThenBy(x => x.Month)
                 .ToListAsync();
 
-            // Get recent registrations (last 5 users)
-            ViewBag.RecentUsers = await _context.Users
+            // Role distribution
+            ViewBag.RoleDistribution = await _context.Users
                 .Where(u => u.IsActive)
-                .OrderByDescending(u => u.CreatedAt)
-                .Take(5)
+                .GroupBy(u => u.Role)
+                .Select(g => new { Role = g.Key, Count = g.Count() })
                 .ToListAsync();
 
-            return View(users);
+            // Recent audit logs
+            try
+            {
+                ViewBag.RecentActivity = await _context.AuditLogs
+                    .OrderByDescending(a => a.Timestamp)
+                    .Take(20)
+                    .ToListAsync();
+            }
+            catch
+            {
+                ViewBag.RecentActivity = new List<AuditLog>();
+            }
+
+            return View();
         }
 
         #endregion
 
         #region Create User
 
-        /// <summary>
-        /// GET: Admin/Create
-        /// Displays the user creation form
-        /// </summary>
+        
         public IActionResult Create()
         {
-            return View();
+            return View(new UserCreateViewModel());
         }
 
-        /// <summary>
-        /// POST: Admin/Create
-        /// Processes the user creation form submission
-        /// Creates appropriate user type based on selected role
-        /// </summary>
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(UserCreateViewModel model)
         {
-            // Check if email already exists
-            if (await _context.Users.AnyAsync(u => u.Email == model.Email))
+            try
             {
-                ModelState.AddModelError("Email", "A user with this email already exists.");
-                return View(model);
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == model.Email.ToLower()))
                 {
-                    // Hash the password for security
+                    ModelState.AddModelError("Email", "A user with this email already exists.");
+                    return View(model);
+                }
+
+                if (ModelState.IsValid)
+                {
                     string passwordHash = HashPassword(model.Password);
 
-                    // Create appropriate user type based on role selection
                     switch (model.Role)
                     {
                         case "Patient":
                             var patient = new Patient
                             {
-                                Email = model.Email,
-                                FirstName = model.FirstName,
-                                LastName = model.LastName,
+                                Email = model.Email.Trim().ToLower(),
+                                FirstName = model.FirstName.Trim(),
+                                LastName = model.LastName.Trim(),
                                 PasswordHash = passwordHash,
                                 Role = "Patient",
                                 IsActive = true,
@@ -111,9 +274,9 @@ namespace GrapheneTrace.Controllers
                         case "Clinician":
                             var clinician = new Clinician
                             {
-                                Email = model.Email,
-                                FirstName = model.FirstName,
-                                LastName = model.LastName,
+                                Email = model.Email.Trim().ToLower(),
+                                FirstName = model.FirstName.Trim(),
+                                LastName = model.LastName.Trim(),
                                 PasswordHash = passwordHash,
                                 Role = "Clinician",
                                 IsActive = true,
@@ -129,9 +292,9 @@ namespace GrapheneTrace.Controllers
                         case "Admin":
                             var admin = new Admin
                             {
-                                Email = model.Email,
-                                FirstName = model.FirstName,
-                                LastName = model.LastName,
+                                Email = model.Email.Trim().ToLower(),
+                                FirstName = model.FirstName.Trim(),
+                                LastName = model.LastName.Trim(),
                                 PasswordHash = passwordHash,
                                 Role = "Admin",
                                 IsActive = true,
@@ -142,19 +305,34 @@ namespace GrapheneTrace.Controllers
                             break;
 
                         default:
-                            ModelState.AddModelError("Role", "Invalid role selected.");
+                            ModelState.AddModelError("Role", "Please select a valid role.");
                             return View(model);
                     }
 
                     await _context.SaveChangesAsync();
+                    await CreateAuditLogAsync("CREATE_USER",
+                        $"Created new {model.Role}: {model.FirstName} {model.LastName} ({model.Email})");
+
+                    _logger.LogInformation("User created: {Email} by {Admin}", model.Email, User.Identity?.Name);
+
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            message = $"User '{model.FirstName} {model.LastName}' created successfully!",
+                            redirectUrl = Url.Action(nameof(Index))
+                        });
+                    }
+
                     TempData["SuccessMessage"] = $"User '{model.FirstName} {model.LastName}' created successfully as {model.Role}!";
                     return RedirectToAction(nameof(Index));
                 }
-                catch (Exception ex)
-                {
-                    // Log exception and show error message
-                    ModelState.AddModelError("", $"Error creating user: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating user: {Email}", model.Email);
+                ModelState.AddModelError("", "An unexpected error occurred. Please try again.");
             }
 
             return View(model);
@@ -164,24 +342,14 @@ namespace GrapheneTrace.Controllers
 
         #region Edit User
 
-        /// <summary>
-        /// GET: Admin/Edit/5
-        /// Displays the edit form for a specific user
-        /// </summary>
+        
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
 
-            // Create view model with existing user data
             var viewModel = new UserEditViewModel
             {
                 UserId = user.UserId,
@@ -192,58 +360,20 @@ namespace GrapheneTrace.Controllers
                 IsActive = user.IsActive
             };
 
-            // Load role-specific data
-            switch (user.Role)
-            {
-                case "Patient":
-                    var patient = await _context.Patients.FindAsync(id);
-                    if (patient != null)
-                    {
-                        viewModel.MedicalCondition = patient.MedicalCondition;
-                        viewModel.MobilityLevel = patient.MobilityLevel;
-                    }
-                    break;
-
-                case "Clinician":
-                    var clinician = await _context.Clinicians.FindAsync(id);
-                    if (clinician != null)
-                    {
-                        viewModel.LicenseNumber = clinician.LicenseNumber;
-                        viewModel.Specialization = clinician.Specialization;
-                        viewModel.Department = clinician.Department;
-                        viewModel.ContactPhone = clinician.ContactPhone;
-                    }
-                    break;
-
-                case "Admin":
-                    var admin = await _context.Admins.FindAsync(id);
-                    if (admin != null)
-                    {
-                        viewModel.AccessLevel = admin.AccessLevel;
-                    }
-                    break;
-            }
-
+            await LoadRoleSpecificDataAsync(viewModel, user.Role, id.Value);
             return View(viewModel);
         }
 
-        /// <summary>
-        /// POST: Admin/Edit/5
-        /// Processes the user edit form submission
-        /// </summary>
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, UserEditViewModel model)
         {
-            if (id != model.UserId)
-            {
-                return NotFound();
-            }
+            if (id != model.UserId) return NotFound();
 
-            // Check if email is taken by another user
-            if (await _context.Users.AnyAsync(u => u.Email == model.Email && u.UserId != id))
+            if (await _context.Users.AnyAsync(u => u.Email.ToLower() == model.Email.ToLower() && u.UserId != id))
             {
-                ModelState.AddModelError("Email", "This email is already in use by another user.");
+                ModelState.AddModelError("Email", "This email is already in use.");
                 return View(model);
             }
 
@@ -251,81 +381,40 @@ namespace GrapheneTrace.Controllers
             {
                 try
                 {
-                    // Update based on user role
                     switch (model.Role)
                     {
                         case "Patient":
                             var patient = await _context.Patients.FindAsync(id);
-                            if (patient != null)
-                            {
-                                patient.Email = model.Email;
-                                patient.FirstName = model.FirstName;
-                                patient.LastName = model.LastName;
-                                patient.IsActive = model.IsActive;
-                                patient.MedicalCondition = model.MedicalCondition ?? patient.MedicalCondition;
-                                patient.MobilityLevel = model.MobilityLevel ?? patient.MobilityLevel;
-
-                                // Update password only if provided
-                                if (!string.IsNullOrEmpty(model.NewPassword))
-                                {
-                                    patient.PasswordHash = HashPassword(model.NewPassword);
-                                }
-                            }
+                            if (patient != null) UpdatePatient(patient, model);
                             break;
 
                         case "Clinician":
                             var clinician = await _context.Clinicians.FindAsync(id);
-                            if (clinician != null)
-                            {
-                                clinician.Email = model.Email;
-                                clinician.FirstName = model.FirstName;
-                                clinician.LastName = model.LastName;
-                                clinician.IsActive = model.IsActive;
-                                clinician.LicenseNumber = model.LicenseNumber ?? clinician.LicenseNumber;
-                                clinician.Specialization = model.Specialization ?? clinician.Specialization;
-                                clinician.Department = model.Department ?? clinician.Department;
-                                clinician.ContactPhone = model.ContactPhone ?? clinician.ContactPhone;
-
-                                if (!string.IsNullOrEmpty(model.NewPassword))
-                                {
-                                    clinician.PasswordHash = HashPassword(model.NewPassword);
-                                }
-                            }
+                            if (clinician != null) UpdateClinician(clinician, model);
                             break;
 
                         case "Admin":
                             var admin = await _context.Admins.FindAsync(id);
-                            if (admin != null)
-                            {
-                                admin.Email = model.Email;
-                                admin.FirstName = model.FirstName;
-                                admin.LastName = model.LastName;
-                                admin.IsActive = model.IsActive;
-                                admin.AccessLevel = model.AccessLevel ?? admin.AccessLevel;
-
-                                if (!string.IsNullOrEmpty(model.NewPassword))
-                                {
-                                    admin.PasswordHash = HashPassword(model.NewPassword);
-                                }
-                            }
+                            if (admin != null) UpdateAdmin(admin, model);
                             break;
                     }
 
                     await _context.SaveChangesAsync();
+                    await CreateAuditLogAsync("UPDATE_USER",
+                        $"Updated {model.Role}: {model.FirstName} {model.LastName} (ID: {id})");
+
                     TempData["SuccessMessage"] = $"User '{model.FirstName} {model.LastName}' updated successfully!";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await UserExists(model.UserId))
-                    {
-                        return NotFound();
-                    }
+                    if (!await UserExistsAsync(model.UserId)) return NotFound();
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    ModelState.AddModelError("", $"Error updating user: {ex.Message}");
+                    _logger.LogError(ex, "Error updating user: {UserId}", id);
+                    ModelState.AddModelError("", "An error occurred while updating the user.");
                 }
             }
 
@@ -336,30 +425,21 @@ namespace GrapheneTrace.Controllers
 
         #region Delete User
 
-        /// <summary>
-        /// GET: Admin/Delete/5
-        /// Displays confirmation page for user deletion
-        /// </summary>
+        
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
+
+            ViewBag.AssignmentCount = await _context.PatientClinicians
+                .CountAsync(pc => pc.PatientId == id || pc.ClinicianId == id);
 
             return View(user);
         }
 
-        /// <summary>
-        /// POST: Admin/Delete/5
-        /// Performs soft delete (sets IsActive = false)
-        /// </summary>
+        
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -367,36 +447,55 @@ namespace GrapheneTrace.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "User not found." });
             }
 
             try
             {
-                // Soft delete - set IsActive to false instead of removing
+                string userName = $"{user.FirstName} {user.LastName}";
                 user.IsActive = false;
 
-                // Also remove any patient-clinician assignments
                 var assignments = await _context.PatientClinicians
                     .Where(pc => pc.PatientId == id || pc.ClinicianId == id)
                     .ToListAsync();
 
+                int assignmentCount = assignments.Count;
                 _context.PatientClinicians.RemoveRange(assignments);
-                await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"User '{user.FirstName} {user.LastName}' has been deactivated.";
+                await _context.SaveChangesAsync();
+                await CreateAuditLogAsync("DEACTIVATE_USER",
+                    $"Deactivated {user.Role}: {userName} (ID: {id}). Removed {assignmentCount} assignment(s).");
+
+                _logger.LogWarning("User deactivated: {UserId} by {Admin}", id, User.Identity?.Name);
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"User '{userName}' has been deactivated.",
+                        assignmentsRemoved = assignmentCount
+                    });
+                }
+
+                TempData["SuccessMessage"] = $"User '{userName}' has been deactivated.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Error deleting user: {ex.Message}";
-            }
+                _logger.LogError(ex, "Error deactivating user: {UserId}", id);
 
-            return RedirectToAction(nameof(Index));
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "An error occurred." });
+                }
+
+                TempData["ErrorMessage"] = "An error occurred while deactivating the user.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
-        /// <summary>
-        /// POST: Admin/HardDelete/5
-        /// Permanently removes user from database (use with caution)
-        /// </summary>
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> HardDelete(int id)
@@ -404,65 +503,67 @@ namespace GrapheneTrace.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "User not found." });
             }
 
             try
             {
-                // Remove any patient-clinician assignments first
+                string userName = $"{user.FirstName} {user.LastName}";
+                string userEmail = user.Email;
+
                 var assignments = await _context.PatientClinicians
                     .Where(pc => pc.PatientId == id || pc.ClinicianId == id)
                     .ToListAsync();
 
                 _context.PatientClinicians.RemoveRange(assignments);
-
-                // Permanently remove user
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"User '{user.FirstName} {user.LastName}' has been permanently deleted.";
+                await CreateAuditLogAsync("DELETE_USER_PERMANENT",
+                    $"PERMANENTLY DELETED {user.Role}: {userName} ({userEmail}, ID: {id})");
+
+                _logger.LogWarning("User PERMANENTLY deleted: {UserId} by {Admin}", id, User.Identity?.Name);
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = $"User '{userName}' permanently deleted." });
+                }
+
+                TempData["SuccessMessage"] = $"User '{userName}' has been permanently deleted.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Error deleting user: {ex.Message}";
-            }
+                _logger.LogError(ex, "Error permanently deleting user: {UserId}", id);
 
-            return RedirectToAction(nameof(Index));
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "An error occurred." });
+                }
+
+                TempData["ErrorMessage"] = "An error occurred while deleting the user.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         #endregion
 
-        #region View User Details
+        #region User Details
 
-        /// <summary>
-        /// GET: Admin/Details/5
-        /// Displays detailed information about a specific user
-        /// </summary>
+        
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
 
-            // Create view model with all user details
-            var viewModel = new UserDetailsViewModel
-            {
-                User = user
-            };
+            var viewModel = new UserDetailsViewModel { User = user };
 
-            // Load role-specific data
             switch (user.Role)
             {
                 case "Patient":
                     viewModel.Patient = await _context.Patients.FindAsync(id);
-                    // Get assigned clinicians
                     viewModel.Assignments = await _context.PatientClinicians
                         .Include(pc => pc.Clinician)
                         .Where(pc => pc.PatientId == id)
@@ -471,7 +572,6 @@ namespace GrapheneTrace.Controllers
 
                 case "Clinician":
                     viewModel.Clinician = await _context.Clinicians.FindAsync(id);
-                    // Get assigned patients
                     viewModel.Assignments = await _context.PatientClinicians
                         .Include(pc => pc.Patient)
                         .Where(pc => pc.ClinicianId == id)
@@ -488,48 +588,30 @@ namespace GrapheneTrace.Controllers
 
         #endregion
 
-        #region Patient-Clinician Assignment
+        #region Patient-Clinician Assignments
 
-        /// <summary>
-        /// GET: Admin/AssignPatient
-        /// Displays the patient-clinician assignment form
-        /// </summary>
+        
         public async Task<IActionResult> AssignPatient()
         {
-            // Populate dropdowns with active patients and clinicians from database
-            ViewBag.Patients = await _context.Patients
-                .Where(p => p.IsActive)
-                .Select(p => new { p.UserId, FullName = p.FirstName + " " + p.LastName })
-                .ToListAsync();
-
-            ViewBag.Clinicians = await _context.Clinicians
-                .Where(c => c.IsActive)
-                .Select(c => new { c.UserId, FullName = "Dr. " + c.FirstName + " " + c.LastName + " - " + c.Specialization })
-                .ToListAsync();
-
-            return View();
+            await PopulateAssignmentDropdownsAsync();
+            return View(new PatientClinicianAssignmentViewModel());
         }
 
-        /// <summary>
-        /// POST: Admin/AssignPatient
-        /// Creates a new patient-clinician assignment
-        /// </summary>
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPatient(PatientClinicianAssignmentViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Check for duplicate assignment
-                var existingAssignment = await _context.PatientClinicians
-                    .FirstOrDefaultAsync(pc =>
-                        pc.PatientId == model.PatientId &&
-                        pc.ClinicianId == model.ClinicianId);
+                bool exists = await _context.PatientClinicians
+                    .AnyAsync(pc => pc.PatientId == model.PatientId && pc.ClinicianId == model.ClinicianId);
 
-                if (existingAssignment != null)
+                if (exists)
                 {
                     TempData["ErrorMessage"] = "This patient is already assigned to this clinician.";
-                    return RedirectToAction(nameof(AssignPatient));
+                    await PopulateAssignmentDropdownsAsync();
+                    return View(model);
                 }
 
                 try
@@ -539,95 +621,141 @@ namespace GrapheneTrace.Controllers
                         PatientId = model.PatientId,
                         ClinicianId = model.ClinicianId,
                         AssignmentDate = DateTime.Now,
-                        Notes = model.Notes ?? ""
+                        Notes = model.Notes?.Trim() ?? ""
                     };
 
                     _context.PatientClinicians.Add(assignment);
                     await _context.SaveChangesAsync();
 
-                    // Get names for success message
                     var patient = await _context.Patients.FindAsync(model.PatientId);
                     var clinician = await _context.Clinicians.FindAsync(model.ClinicianId);
 
-                    TempData["SuccessMessage"] = $"Patient '{patient?.FirstName} {patient?.LastName}' successfully assigned to Dr. {clinician?.FirstName} {clinician?.LastName}!";
+                    await CreateAuditLogAsync("CREATE_ASSIGNMENT",
+                        $"Assigned {patient?.FirstName} {patient?.LastName} to Dr. {clinician?.FirstName} {clinician?.LastName}");
+
+                    TempData["SuccessMessage"] = "Patient successfully assigned!";
                     return RedirectToAction(nameof(ViewAssignments));
                 }
                 catch (Exception ex)
                 {
-                    TempData["ErrorMessage"] = $"Error creating assignment: {ex.Message}";
+                    _logger.LogError(ex, "Error creating assignment");
+                    TempData["ErrorMessage"] = "An error occurred.";
                 }
             }
 
-            // Repopulate dropdowns on error
-            ViewBag.Patients = await _context.Patients
-                .Where(p => p.IsActive)
-                .Select(p => new { p.UserId, FullName = p.FirstName + " " + p.LastName })
-                .ToListAsync();
-
-            ViewBag.Clinicians = await _context.Clinicians
-                .Where(c => c.IsActive)
-                .Select(c => new { c.UserId, FullName = "Dr. " + c.FirstName + " " + c.LastName + " - " + c.Specialization })
-                .ToListAsync();
-
+            await PopulateAssignmentDropdownsAsync();
             return View(model);
         }
 
-        /// <summary>
-        /// GET: Admin/ViewAssignments
-        /// Displays all current patient-clinician assignments
-        /// </summary>
-        public async Task<IActionResult> ViewAssignments()
+        public async Task<IActionResult> ViewAssignments(string searchTerm = "")
         {
-            var assignments = await _context.PatientClinicians
+            var query = _context.PatientClinicians
                 .Include(pc => pc.Patient)
                 .Include(pc => pc.Clinician)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                query = query.Where(pc =>
+                    pc.Patient.FirstName.ToLower().Contains(searchTerm) ||
+                    pc.Patient.LastName.ToLower().Contains(searchTerm) ||
+                    pc.Clinician.FirstName.ToLower().Contains(searchTerm) ||
+                    pc.Clinician.LastName.ToLower().Contains(searchTerm));
+            }
+
+            ViewBag.SearchTerm = searchTerm;
+
+            var assignments = await query
                 .OrderByDescending(pc => pc.AssignmentDate)
                 .ToListAsync();
 
             return View(assignments);
         }
 
-        /// <summary>
-        /// POST: Admin/RemoveAssignment
-        /// Removes a patient-clinician assignment
-        /// </summary>
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveAssignment(int patientId, int clinicianId)
         {
             var assignment = await _context.PatientClinicians
-                .FirstOrDefaultAsync(pc =>
-                    pc.PatientId == patientId &&
-                    pc.ClinicianId == clinicianId);
+                .Include(pc => pc.Patient)
+                .Include(pc => pc.Clinician)
+                .FirstOrDefaultAsync(pc => pc.PatientId == patientId && pc.ClinicianId == clinicianId);
 
             if (assignment == null)
             {
-                TempData["ErrorMessage"] = "Assignment not found.";
-                return RedirectToAction(nameof(ViewAssignments));
+                return Json(new { success = false, message = "Assignment not found." });
             }
 
             try
             {
+                string patientName = $"{assignment.Patient?.FirstName} {assignment.Patient?.LastName}";
+                string clinicianName = $"{assignment.Clinician?.FirstName} {assignment.Clinician?.LastName}";
+
                 _context.PatientClinicians.Remove(assignment);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Assignment removed successfully.";
+
+                await CreateAuditLogAsync("REMOVE_ASSIGNMENT",
+                    $"Removed assignment: {patientName} from Dr. {clinicianName}");
+
+                return Json(new { success = true, message = "Assignment removed successfully." });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Error removing assignment: {ex.Message}";
+                _logger.LogError(ex, "Error removing assignment");
+                return Json(new { success = false, message = "An error occurred." });
             }
-
-            return RedirectToAction(nameof(ViewAssignments));
         }
 
         #endregion
 
-        #region Toggle User Status
+        #region Audit Logs
 
-        /// <summary>
-        /// POST: Admin/ToggleStatus/5
-        /// Toggles user active/inactive status (AJAX endpoint)
-        /// </summary>
+       
+        public async Task<IActionResult> AuditLogs(string actionFilter = "", int pageNumber = 1)
+        {
+            try
+            {
+                var query = _context.AuditLogs.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(actionFilter))
+                {
+                    query = query.Where(a => a.Action == actionFilter);
+                }
+
+                int pageSize = 20;
+                int totalItems = await query.CountAsync();
+
+                ViewBag.CurrentPage = pageNumber;
+                ViewBag.TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+                ViewBag.ActionFilter = actionFilter;
+
+                ViewBag.ActionTypes = await _context.AuditLogs
+                    .Select(a => a.Action)
+                    .Distinct()
+                    .OrderBy(a => a)
+                    .ToListAsync();
+
+                var logs = await query
+                    .OrderByDescending(a => a.Timestamp)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return View(logs);
+            }
+            catch
+            {
+                return View(new List<AuditLog>());
+            }
+        }
+
+        #endregion
+
+        #region AJAX Endpoints
+
+       
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
@@ -642,6 +770,10 @@ namespace GrapheneTrace.Controllers
                 user.IsActive = !user.IsActive;
                 await _context.SaveChangesAsync();
 
+                await CreateAuditLogAsync(
+                    user.IsActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
+                    $"{(user.IsActive ? "Activated" : "Deactivated")} {user.Role}: {user.FirstName} {user.LastName}");
+
                 return Json(new
                 {
                     success = true,
@@ -651,38 +783,174 @@ namespace GrapheneTrace.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                _logger.LogError(ex, "Error toggling user status");
+                return Json(new { success = false, message = "An error occurred." });
             }
+        }
+
+        
+        [HttpGet]
+        public async Task<IActionResult> GetUserStats()
+        {
+            var stats = new
+            {
+                totalPatients = await _context.Patients.CountAsync(p => p.IsActive),
+                totalClinicians = await _context.Clinicians.CountAsync(c => c.IsActive),
+                totalAdmins = await _context.Admins.CountAsync(a => a.IsActive),
+                totalAssignments = await _context.PatientClinicians.CountAsync()
+            };
+
+            return Json(stats);
+        }
+
+        
+        [HttpGet]
+        public async Task<IActionResult> ExportUsers()
+        {
+            var users = await _context.Users
+                .Where(u => u.IsActive)
+                .OrderBy(u => u.LastName)
+                .ToListAsync();
+
+            var csv = new StringBuilder();
+            csv.AppendLine("ID,FirstName,LastName,Email,Role,CreatedAt,Status");
+
+            foreach (var user in users)
+            {
+                csv.AppendLine($"{user.UserId},{user.FirstName},{user.LastName},{user.Email},{user.Role},{user.CreatedAt:yyyy-MM-dd},{(user.IsActive ? "Active" : "Inactive")}");
+            }
+
+            await CreateAuditLogAsync("EXPORT_USERS", $"Exported {users.Count} users to CSV");
+
+            byte[] bytes = Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"users_export_{DateTime.Now:yyyyMMdd}.csv");
         }
 
         #endregion
 
-        #region Helper Methods
+        #region Private Helper Methods
 
-        /// <summary>
-        /// Hashes password using SHA256 for secure storage
-        /// Note: For production, use BCrypt or Argon2 instead
-        /// </summary>
-        private string HashPassword(string password)
+        private static string HashPassword(string password)
         {
-            using (SHA256 sha256 = SHA256.Create())
+            using SHA256 sha256 = SHA256.Create();
+            byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToHexString(bytes).ToLower();
+        }
+
+        private async Task<bool> UserExistsAsync(int id)
+        {
+            return await _context.Users.AnyAsync(e => e.UserId == id);
+        }
+
+        private async Task CreateAuditLogAsync(string action, string details)
+        {
+            try
             {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder builder = new StringBuilder();
-                foreach (byte b in bytes)
+                var log = new AuditLog
                 {
-                    builder.Append(b.ToString("x2"));
-                }
-                return builder.ToString();
+                    Action = action,
+                    Details = details,
+                    PerformedBy = User.Identity?.Name ?? "System",
+                    Timestamp = DateTime.Now,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown"
+                };
+
+                _context.AuditLogs.Add(log);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create audit log");
             }
         }
 
-        /// <summary>
-        /// Checks if a user exists in the database
-        /// </summary>
-        private async Task<bool> UserExists(int id)
+        private async Task PopulateAssignmentDropdownsAsync()
         {
-            return await _context.Users.AnyAsync(e => e.UserId == id);
+            ViewBag.Patients = await _context.Patients
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.LastName)
+                .Select(p => new { p.UserId, FullName = p.FirstName + " " + p.LastName })
+                .ToListAsync();
+
+            ViewBag.Clinicians = await _context.Clinicians
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.LastName)
+                .Select(c => new { c.UserId, FullName = "Dr. " + c.FirstName + " " + c.LastName + " (" + c.Specialization + ")" })
+                .ToListAsync();
+        }
+
+        private async Task LoadRoleSpecificDataAsync(UserEditViewModel viewModel, string role, int userId)
+        {
+            switch (role)
+            {
+                case "Patient":
+                    var patient = await _context.Patients.FindAsync(userId);
+                    if (patient != null)
+                    {
+                        viewModel.MedicalCondition = patient.MedicalCondition;
+                        viewModel.MobilityLevel = patient.MobilityLevel;
+                    }
+                    break;
+
+                case "Clinician":
+                    var clinician = await _context.Clinicians.FindAsync(userId);
+                    if (clinician != null)
+                    {
+                        viewModel.LicenseNumber = clinician.LicenseNumber;
+                        viewModel.Specialization = clinician.Specialization;
+                        viewModel.Department = clinician.Department;
+                        viewModel.ContactPhone = clinician.ContactPhone;
+                    }
+                    break;
+
+                case "Admin":
+                    var admin = await _context.Admins.FindAsync(userId);
+                    if (admin != null)
+                    {
+                        viewModel.AccessLevel = admin.AccessLevel;
+                    }
+                    break;
+            }
+        }
+
+        private void UpdatePatient(Patient patient, UserEditViewModel model)
+        {
+            patient.Email = model.Email.Trim().ToLower();
+            patient.FirstName = model.FirstName.Trim();
+            patient.LastName = model.LastName.Trim();
+            patient.IsActive = model.IsActive;
+            patient.MedicalCondition = model.MedicalCondition ?? patient.MedicalCondition;
+            patient.MobilityLevel = model.MobilityLevel ?? patient.MobilityLevel;
+
+            if (!string.IsNullOrEmpty(model.NewPassword))
+                patient.PasswordHash = HashPassword(model.NewPassword);
+        }
+
+        private void UpdateClinician(Clinician clinician, UserEditViewModel model)
+        {
+            clinician.Email = model.Email.Trim().ToLower();
+            clinician.FirstName = model.FirstName.Trim();
+            clinician.LastName = model.LastName.Trim();
+            clinician.IsActive = model.IsActive;
+            clinician.LicenseNumber = model.LicenseNumber ?? clinician.LicenseNumber;
+            clinician.Specialization = model.Specialization ?? clinician.Specialization;
+            clinician.Department = model.Department ?? clinician.Department;
+            clinician.ContactPhone = model.ContactPhone ?? clinician.ContactPhone;
+
+            if (!string.IsNullOrEmpty(model.NewPassword))
+                clinician.PasswordHash = HashPassword(model.NewPassword);
+        }
+
+        private void UpdateAdmin(Admin admin, UserEditViewModel model)
+        {
+            admin.Email = model.Email.Trim().ToLower();
+            admin.FirstName = model.FirstName.Trim();
+            admin.LastName = model.LastName.Trim();
+            admin.IsActive = model.IsActive;
+            admin.AccessLevel = model.AccessLevel ?? admin.AccessLevel;
+
+            if (!string.IsNullOrEmpty(model.NewPassword))
+                admin.PasswordHash = HashPassword(model.NewPassword);
         }
 
         #endregion

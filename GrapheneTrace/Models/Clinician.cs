@@ -1,11 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace GrapheneTrace.Models
-{
-    /// <summary>
-    /// Clinician class - represents healthcare professionals
-    /// Inherits from User and adds clinician-specific properties
-    /// </summary>
+namespace GrapheneTrace.Models{
+
     public class Clinician : User
     {
         [StringLength(50)]

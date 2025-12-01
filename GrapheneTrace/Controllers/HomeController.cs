@@ -15,7 +15,7 @@ namespace GrapheneTrace.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Login", "Account");
         }
 
         public IActionResult Privacy()

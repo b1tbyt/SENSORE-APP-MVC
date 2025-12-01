@@ -2,10 +2,7 @@
 
 namespace GrapheneTrace.Models
 {
-    /// <summary>
-    /// Patient class - represents healthcare patients
-    /// Inherits from User and adds patient-specific properties
-    /// </summary>
+    
     public class Patient : User
     {
         [StringLength(500)]

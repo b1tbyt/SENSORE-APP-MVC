@@ -2,10 +2,7 @@
 
 namespace GrapheneTrace.Models
 {
-    /// <summary>
-    /// Admin class - represents system administrators
-    /// Inherits from User and adds admin-specific properties
-    /// </summary>
+
     public class Admin : User
     {
         [StringLength(50)]

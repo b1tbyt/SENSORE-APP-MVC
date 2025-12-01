@@ -35,8 +35,8 @@
                 <div class="card-body">
                     <div class="alert alert-warning">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Warning:</strong> You are about to deactivate this user account. 
-                        The user will no longer be able to access the system, and any patient-clinician assignments 
+                        <strong>Warning:</strong> You are about to deactivate this user account.
+                        The user will no longer be able to access the system, and any patient-clinician assignments
                         involving this user will be removed.
                     </div>
 
@@ -54,9 +54,9 @@
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <hr>
-                            
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <p class="mb-2">
@@ -75,7 +75,7 @@
                                     </p>
                                     <p class="mb-2">
                                         <i class="fas fa-toggle-on me-2 text-muted"></i>
-                                        <strong>Status:</strong> 
+                                        <strong>Status:</strong>
                                         <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
                                             @(Model.IsActive ? "Active" : "Inactive")
                                         </span>
@@ -98,7 +98,7 @@
                                             <i class="fas fa-user-slash fa-3x text-warning mb-3"></i>
                                             <h5>Soft Delete (Recommended)</h5>
                                             <p class="text-muted small">
-                                                Deactivates the user account. The user data is preserved but they 
+                                                Deactivates the user account. The user data is preserved but they
                                                 cannot log in. Can be reactivated later.
                                             </p>
                                             <form asp-action="Delete" method="post">
@@ -116,11 +116,11 @@
                                             <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
                                             <h5>Permanent Delete</h5>
                                             <p class="text-muted small">
-                                                <strong class="text-danger">Irreversible!</strong> 
-                                                Permanently removes the user from the database. 
+                                                <strong class="text-danger">Irreversible!</strong>
+                                                Permanently removes the user from the database.
                                                 All associated data will be lost.
                                             </p>
-                                            <form asp-action="HardDelete" method="post" 
+                                            <form asp-action="HardDelete" method="post"
                                                   onsubmit="return confirm('Are you absolutely sure? This action CANNOT be undone!');">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@Model.UserId" />

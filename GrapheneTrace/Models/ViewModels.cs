@@ -122,11 +122,7 @@ namespace GrapheneTrace.Models
         [Display(Name = "Access Level")]
         public string? AccessLevel { get; set; }
     }
-
-    /// <summary>
-    /// ViewModel for displaying user details
-    /// Includes role-specific data and assignments
-    /// </summary>
+       
     public class UserDetailsViewModel
     {
         public User User { get; set; } = null!;
@@ -135,11 +131,7 @@ namespace GrapheneTrace.Models
         public Admin? Admin { get; set; }
         public List<PatientClinician> Assignments { get; set; } = new List<PatientClinician>();
     }
-
-    /// <summary>
-    /// ViewModel for patient-clinician assignment
-    /// </summary>
-    public class PatientClinicianAssignmentViewModel
+        public class PatientClinicianAssignmentViewModel
     {
         [Required(ErrorMessage = "Please select a patient")]
         [Display(Name = "Patient")]
@@ -153,9 +145,7 @@ namespace GrapheneTrace.Models
         [Display(Name = "Notes (Optional)")]
         public string? Notes { get; set; }
     }
-    /// <summary>
-    /// ViewModel for the Error page
-    /// </summary>
+   
     public class ErrorViewModel
     {
         public string? RequestId { get; set; }

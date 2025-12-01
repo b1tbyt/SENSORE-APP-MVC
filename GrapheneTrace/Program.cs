@@ -3,49 +3,49 @@ using GrapheneTrace.Data;
 using GrapheneTrace.Models;
 using System.Security.Cryptography;
 using System.Text;
+using GrapheneTrace.Hubs;
+using GrapheneTrace.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =============================================================================
-// SERVICE CONFIGURATION
-// =============================================================================
-
-// Add MVC services with Razor views
+// SIGNALR & SENSOR SERVICES 
+builder.Services.AddSignalR();
 builder.Services.AddControllersWithViews();
 
-// Configure In-Memory Database for development
-// Note: For production, replace with SQL Server or PostgreSQL
+// Enable Cookie Authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+    });
+
+
+builder.Services.AddSingleton<PressureDataService>();
+
+builder.Services.AddSingleton<HeatmapBroadcastService>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("GrapheneTraceDb"));
 
 var app = builder.Build();
-
-// =============================================================================
-// SEED DATABASE WITH INITIAL DATA
-// =============================================================================
-
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    // Ensure database is created
+        
     context.Database.EnsureCreated();
-
-    // Only seed if database is empty
+       
     if (!context.Users.Any())
     {
         SeedDatabase(context);
     }
+
 }
 
-/// <summary>
-/// Seeds the database with initial test data
-/// Creates sample users of each role and assignments
-/// </summary>
+
 void SeedDatabase(ApplicationDbContext context)
 {
-    // Helper function to hash passwords
-    string HashPassword(string password)
+        string HashPassword(string password)
     {
         using (SHA256 sha256 = SHA256.Create())
         {
@@ -149,7 +149,6 @@ void SeedDatabase(ApplicationDbContext context)
     };
     context.Patients.Add(patient3);
 
-    // Save users first to get their IDs
     context.SaveChanges();
 
     // Create Patient-Clinician Assignments
@@ -195,10 +194,6 @@ void SeedDatabase(ApplicationDbContext context)
     Console.WriteLine($"  - {context.PatientClinicians.Count()} Assignment(s)");
 }
 
-// =============================================================================
-// MIDDLEWARE PIPELINE CONFIGURATION
-// =============================================================================
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -208,11 +203,14 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Configure default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapHub<PressureHub>("/sensorHub");
+
 
 app.Run();
