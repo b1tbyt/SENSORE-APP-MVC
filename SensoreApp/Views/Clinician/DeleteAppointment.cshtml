@@ -1,0 +1,17 @@
+﻿@model SensoreApp.Models.Appointment
+
+<h2>Delete Appointment</h2>
+
+<p>Are you sure you want to delete this appointment?</p>
+
+<ul>
+    <li><strong>Patient:</strong> @Model.PatientName</li>
+    <li><strong>Date:</strong> @Model.AppointmentDate</li>
+    <li><strong>Reason:</strong> @Model.Reason</li>
+</ul>
+
+<form asp-action="DeleteAppointment" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" style="background:red;color:white;">Delete</button>
+    <a href="/Clinician/Appointments">Cancel</a>
+</form>

@@ -1,0 +1,32 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    <h2>Add Appointment</h2>
+
+    <form method="post">
+
+        <label>Patient Name:</label>
+        <input name="PatientName" required />
+
+        <label>Appointment Date:</label>
+        <input type="datetime-local" name="AppointmentDate" required />
+
+        <label>Reason:</label>
+        <input name="Reason" required />
+
+        <label>Status:</label>
+        <select name="Status" class="form-control">
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
+
+        <br />
+
+        <button type="submit">Save</button>
+
+    </form>
+
+
+}

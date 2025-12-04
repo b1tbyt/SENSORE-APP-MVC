@@ -1,0 +1,32 @@
+﻿@model IEnumerable<SensoreApp.Models.Appointment>
+
+<h2>Appointments</h2>
+
+<p>
+    <a href="/Clinician/AddAppointment">Add New Appointment</a>
+</p>
+
+<table border="1" cellpadding="7" style="border-collapse: collapse; width:100%;">
+    <tr style="background:#f2f2f2;">
+        <th>Patient Name</th>
+        <th>Date</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.PatientName (#@item.PatientID)</td>
+
+            <td>@item.AppointmentDate.ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@item.Reason</td>
+            <td>@item.Status</td>
+            <td>
+                <a href="/Clinician/EditAppointment/@item.Id">Edit</a> |
+                <a href="/Clinician/DeleteAppointment/@item.Id">Delete</a>
+            </td>
+        </tr>
+    }
+</table>

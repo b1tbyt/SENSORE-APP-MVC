@@ -1,0 +1,131 @@
+﻿@model SensoreApp.Models.ClinicianDashboardVM
+
+<h2 class="mb-4 fw-bold">Clinician Dashboard</h2>
+
+<div class="container">
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+
+        <!-- Total Appointments -->
+        <div class="col-md-3">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Total Appointments</h5>
+                    <h2>@Model.TotalAppointments</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today Appointments -->
+        <div class="col-md-3">
+            <div class="card text-white bg-success shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Today</h5>
+                    <h2>@Model.TodayAppointments</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Patients -->
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Total Patients</h5>
+                    <h2>@Model.TotalPatients</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending (temp) -->
+        <div class="col-md-3">
+            <div class="card text-white bg-warning shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <h2>@Model.PendingAppointments</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Chart -->
+    <h3 class="mt-4">Appointments (Last 7 Days)</h3>
+    <canvas id="weeklyChart"></canvas>
+
+    <!-- Status Chart -->
+    <h3 class="mt-5">Appointment Status Distribution</h3>
+    <canvas id="statusChart"></canvas>
+
+    <!-- Today's Appointments -->
+    <h3 class="mt-5 mb-3">Today's Appointments (@(Model.TodaysAppointments?.Count ?? 0))</h3>
+
+    @if (Model.TodaysAppointments?.Count == 0)
+    {
+        <p>No appointments today.</p>
+    }
+    else if (Model.TodaysAppointments != null)
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Patient</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.TodaysAppointments)
+                {
+                    <tr>
+                        <td>@a.AppointmentDate.ToString("hh:mm tt")</td>
+                        <td>@a.PatientName (#@a.PatientID)</td>
+                        <td>@a.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <!-- Quick Links -->
+    <h3 class="mt-5">Quick Actions</h3>
+    <ul>
+        <li><a href="/Clinician/Appointments">View Appointments</a></li>
+        <li><a href="/Clinician/AddAppointment">Add Appointment</a></li>
+        <li><a href="/Clinician/PatientRecords">View Medical Records</a></li>
+        <li><a href="/Clinician/AddRecord">Add Medical Record</a></li>
+    </ul>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Weekly Chart
+    const weeklyCtx = document.getElementById('weeklyChart');
+
+    new Chart(weeklyCtx, {
+        type: 'bar',
+        data: {
+            labels: ['6 Days Ago', '5', '4', '3', '2', 'Yesterday', 'Today'],
+            datasets: [{
+                label: 'Appointments',
+                data: @Html.Raw(Json.Serialize(Model.AppointmentsLast7Days)),
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Status Chart
+    const statusCtx = document.getElementById('statusChart');
+
+    new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Completed', 'Pending', 'Cancelled'],
+            datasets: [{
+                data: @Html.Raw(Json.Serialize(Model.AppointmentStatusCounts)),
+            }]
+        }
+    });
+</script>

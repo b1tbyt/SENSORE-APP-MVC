@@ -1,0 +1,25 @@
+﻿@model SensoreApp.Models.PatientRecord
+
+<h2 class="mb-4">Delete Patient Record</h2>
+
+<p class="text-danger fw-bold">Are you sure you want to delete this record?</p>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Patient Name</th>
+        <td>@Model.PatientName</td>
+    </tr>
+    <tr>
+        <th>Status</th>
+        <td>@Model.MedicalStatus</td>
+    </tr>
+    <tr>
+        <th>Medical Report</th>
+        <td>@Model.MedicalReport</td>
+    </tr>
+</table>
+
+<form method="post">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="/Clinician/PatientRecords" class="btn btn-secondary ms-2">Cancel</a>
+</form>
