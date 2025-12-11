@@ -1,0 +1,414 @@
+@model IEnumerable<SENSORE_APP.Models.Message>
+@{
+    ViewData["Title"] = "Messages";
+}
+
+<!-- Google Fonts - Montserrat for Sensore Brand -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+<!-- Custom styling -->
+<style>
+    body {
+        background: #f7f7f7;
+    }
+
+    .sens-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+    }
+
+    .sens-card-header {
+        background: #0050A0;
+        color: #fff;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .sens-card-body {
+        padding: 1rem;
+    }
+
+    .btn-primary {
+        background: #0050A0;
+        border-color: #0050A0;
+    }
+
+    .btn-primary:hover {
+        background: #003f80;
+    }
+
+    .btn-outline-primary {
+        color: #0050A0;
+        border-color: #0050A0;
+    }
+
+    .btn-outline-primary:hover {
+        background: #0050A0;
+        color: #fff;
+    }
+
+    .message-patient {
+        color: #0050A0;
+        font-weight: 600;
+    }
+
+    .message-clinician {
+        color: #198754;
+        font-weight: 600;
+    }
+
+    .sensore-brand {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #0050A0;
+    }
+
+    .messages-thread {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        padding: 1rem;
+        border-radius: 8px;
+        background: #fafafa;
+        margin-bottom: 1.5rem;
+    }
+
+    .message-bubble {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #fff;
+        border-radius: 8px;
+        border-left: 4px solid #0050A0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .message-bubble.patient {
+        border-left-color: #0050A0;
+    }
+
+    .message-bubble.clinician {
+        border-left-color: #198754;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .message-time {
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .message-text {
+        color: #333;
+        line-height: 1.5;
+        word-wrap: break-word;
+    }
+
+    .message-input-area {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .message-input-area input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .message-input-area button {
+        padding: 0.75rem 1.5rem;
+        white-space: nowrap;
+    }
+
+    /* Tabs Navigation - FIXED */
+    .tabs-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tabs-nav a {
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .tabs-nav a:hover {
+        color: #0050A0;
+    }
+
+    /* Active tab styling */
+    .tabs-nav a.active {
+        color: #0050A0;
+        border-bottom: 3px solid #0050A0;
+    }
+
+    /* Dashboard tab (inactive on Messages page) */
+    .tabs-nav a[asp-action="Index"] {
+        color: #666;
+        border-bottom: 3px solid transparent;
+    }
+
+    /* Messages tab (active on Messages page) */
+    .tabs-nav a[asp-action="Messages"] {
+        color: #0050A0;
+        border-bottom: 3px solid #0050A0;
+    }
+</style>
+
+<div class="container-fluid px-4" style="font-size:0.9rem;">
+    <!-- Brand Header -->
+    <div class="d-flex align-items-center mb-4">
+        <h1 class="mb-0 sensore-brand">Sensore</h1>
+    </div>
+
+    <!-- Tabs Navigation - FIXED with Bootstrap Icons -->
+    <div class="tabs-nav">
+        <a asp-action="Index" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s ease;"><i class="bi bi-bar-chart"></i> Dashboard</a>
+        <a asp-action="Messages" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #0050A0; border-bottom: 3px solid #0050A0; transition: all 0.3s ease;"><i class="bi bi-chat-dots"></i> Messages</a>
+        <a asp-action="Profile" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s ease;"><i class="bi bi-person-circle"></i> Profile</a>
+    </div>
+
+    <!-- Messages Card -->
+    <div class="sens-card">
+        <div class="sens-card-header">Patient-Clinician Messages</div>
+        <div class="sens-card-body">
+            @if (TempData["MessageConfirmation"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["MessageConfirmation"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Messages Thread -->
+            <div class="messages-thread">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var msg in Model.OrderBy(m => m.Timestamp))
+                    {
+                        <div class="message-bubble @(msg.Sender == "Patient" ? "patient" : "clinician")">
+                            <div class="message-header">
+                                <span class="message-sender @(msg.Sender == "Patient" ? "message-patient" : "message-clinician")">
+                                    @msg.Sender
+                                </span>
+                                <span class="message-time">@msg.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</span>
+                            </div>
+                            <div class="message-text">@msg.Text</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No messages yet. Start a conversation!
+                    </div>
+                }
+            </div>
+
+            <!-- Message Input -->
+            <form asp-action="SendMessage" method="post">
+                @Html.AntiForgeryToken()
+                <div class="message-input-area">
+                    <input type="text" name="messageText" class="form-control" placeholder="Type your message..." required />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Info Card -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="sens-card">
+                <div class="sens-card-header">Message Tips</div>
+                <div class="sens-card-body">
+                    <ul class="mb-0">
+                        <li>Keep messages clear and concise</li>
+                        <li>Report any unusual pressure or discomfort</li>
+                        <li>Respond to clinician recommendations promptly</li>
+                        <li>Messages are monitored 24/7</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="sens-card">
+                <div class="sens-card-header">Support</div>
+                <div class="sens-card-body">
+                    <p>If you need urgent assistance, please:</p>
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#contactSupportModal"><i class="bi bi-telephone"></i> Call Support</button>
+                    <a href="#" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#faqModal"><i class="bi bi-question-circle"></i> View FAQs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Support Modal -->
+<div class="modal fade" id="contactSupportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #0050A0; color: white;">
+                <h5 class="modal-title"><i class="bi bi-telephone"></i> Contact Support</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Need immediate assistance? Use one of these methods:</p>
+                <div class="list-group">
+                    <a href="tel:+1-800-SENSORE" class="list-group-item list-group-item-action">
+                        <strong><i class="bi bi-telephone-fill"></i> Call Support</strong>
+                        <small class="d-block text-muted">+1-800-SENSORE (Available 24/7)</small>
+                    </a>
+                    <a href="mailto:support@sensore.com" class="list-group-item list-group-item-action">
+                        <strong><i class="bi bi-envelope-fill"></i> Email Support</strong>
+                        <small class="d-block text-muted">support@sensore.com</small>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#contactFormModal">
+                        <strong><i class="bi bi-chat-left-text"></i> Send Message</strong>
+                        <small class="d-block text-muted">Use our support form</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Form Modal -->
+<div class="modal fade" id="contactFormModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #0050A0; color: white;">
+                <h5 class="modal-title"><i class="bi bi-chat-left-text"></i> Send Support Message</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="SendSupportMessage" method="post">
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text" name="subject" class="form-control" placeholder="What is this about?" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea name="message" class="form-control" rows="4" placeholder="Please describe your issue..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select">
+                            <option value="Low">Low - General inquiry</option>
+                            <option value="Medium" selected>Medium - Needs attention</option>
+                            <option value="High">High - Urgent issue</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- FAQs Modal -->
+<div class="modal fade" id="faqModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #0050A0; color: white;">
+                <h5 class="modal-title"><i class="bi bi-question-circle"></i> Frequently Asked Questions</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                <strong>How often should I reposition?</strong>
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                It's recommended to reposition every 30 minutes to prevent pressure ulcers and maintain circulation. The system will remind you with notifications.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                <strong>What does the pressure map show?</strong>
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                The pressure map shows real-time pressure distribution across your body. Darker red areas indicate higher pressure points that may need attention.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                <strong>What is the Risk Score?</strong>
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                The Risk Score (0-10) indicates your current risk of pressure ulcers. Low (0-3): Green, Moderate (3-7): Yellow, High (7-10): Red.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                <strong>How do I report discomfort?</strong>
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Use the Messages tab to send messages to your clinician immediately. Include details about where you feel discomfort and severity.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                <strong>What should I do during a high-pressure alert?</strong>
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                When you receive a high-pressure alert, adjust your position immediately. If you cannot reposition yourself, contact support right away.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

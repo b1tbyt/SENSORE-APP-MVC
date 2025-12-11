@@ -16,14 +16,36 @@ namespace SENSORE_APP.Services
         private byte[,] _targetHeatmap;
         private readonly Random _random = new Random();
         private readonly object _lock = new object();
+        private readonly HeatmapCsvLoader _csvLoader;
+        private bool _useRealData = false;
 
         public event Action<byte[,]> OnHeatmapUpdated;
 
-        public PressureDataService()
+        public PressureDataService(HeatmapCsvLoader csvLoader = null)
         {
+            _csvLoader = csvLoader;
             _currentHeatmap = new byte[32, 32];
             _targetHeatmap = new byte[32, 32];
-            GenerateRandomHeatmap(_targetHeatmap);
+            
+            // Try to load from CSV, fall back to random if not available
+            if (_csvLoader != null)
+            {
+                var availableHeatmaps = _csvLoader.GetAvailableHeatmaps();
+                if (availableHeatmaps.Count > 0)
+                {
+                    _useRealData = true;
+                    _targetHeatmap = _csvLoader.GetRandomHeatmap();
+                    Array.Copy(_targetHeatmap, _currentHeatmap, _targetHeatmap.Length);
+                }
+                else
+                {
+                    GenerateRandomHeatmap(_targetHeatmap);
+                }
+            }
+            else
+            {
+                GenerateRandomHeatmap(_targetHeatmap);
+            }
         }
 
         /// <summary>
@@ -37,10 +59,19 @@ namespace SENSORE_APP.Services
                 {
                     try
                     {
-                        // Update target heatmap (simulating sensor input) every 1000ms
-                        if (_random.Next(0, 100) < 30) // 30% chance to update target
+                        // Update target heatmap (simulating sensor input or loading from CSV)
+                        if (_random.Next(0, 100) < ((_useRealData && _csvLoader != null) ? 50 : 30))
                         {
-                            GenerateRandomHeatmap(_targetHeatmap);
+                            if (_useRealData && _csvLoader != null)
+                            {
+                                // Load new CSV data
+                                _targetHeatmap = _csvLoader.GetRandomHeatmap();
+                            }
+                            else
+                            {
+                                // Generate random heatmap
+                                GenerateRandomHeatmap(_targetHeatmap);
+                            }
                         }
 
                         // Smoothly interpolate between current and target
@@ -69,6 +100,38 @@ namespace SENSORE_APP.Services
             {
                 return GetHeatmapCopy();
             }
+        }
+
+        /// <summary>
+        /// Loads a new heatmap from CSV data
+        /// </summary>
+        public void LoadHeatmapFromCsv(string fileName = null)
+        {
+            if (_csvLoader == null)
+                return;
+
+            lock (_lock)
+            {
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    _targetHeatmap = _csvLoader.GetRandomHeatmap();
+                }
+                else
+                {
+                    _targetHeatmap = _csvLoader.GetHeatmapByName(fileName);
+                }
+                _useRealData = true;
+            }
+        }
+
+        /// <summary>
+        /// Gets list of available heatmap CSV files
+        /// </summary>
+        public List<string> GetAvailableHeatmaps()
+        {
+            if (_csvLoader == null)
+                return new List<string>();
+            return _csvLoader.GetAvailableHeatmaps();
         }
 
         private void GenerateRandomHeatmap(byte[,] heatmap)

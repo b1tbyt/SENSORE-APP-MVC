@@ -1,0 +1,300 @@
+# ?? NEW FEATURES - QUICK START GUIDE
+
+## Profile • Messages • Log Reposition
+
+---
+
+## ? THREE NEW THINGS YOU CAN DO
+
+### 1?? View Your Patient Profile
+
+**How**:
+1. Click the **"Profile"** tab at the top
+2. See all your information:
+   - Patient demographics
+   - Health information
+   - Doctor/clinician assigned to you
+   - Care team members (nurses, therapists, etc.)
+   - Statistics on messages and repositions
+
+**Edit Profile**:
+- Click **"Edit Profile"** button
+- Update your information
+- Save changes
+
+---
+
+### 2?? Send Messages That Stay
+
+**How**:
+1. Click **"Messages"** tab
+2. Type your message in the input field
+3. Click **"Send"** button
+4. ? **Message appears immediately in the chat!**
+5. It stays there even if you:
+   - Refresh the page
+   - Go to another tab
+   - Come back later
+   - Until 30 minutes of inactivity
+
+**What It Shows**:
+```
+Your Message:
+???????????????????????????????????
+? Patient                  Oct 24, 14:32 ?
+? I'm feeling better today         ?
+???????????????????????????????????
+
+Doctor's Response:
+???????????????????????????????????
+? Clinician                Oct 24, 14:35 ?
+? That's great! Keep up the good   ?
+? work with your exercises.        ?
+???????????????????????????????????
+```
+
+---
+
+### 3?? Log Your Repositioning
+
+**How**:
+1. Go to the **Dashboard** tab
+2. Find the **"Next Reposition"** card (usually on left side)
+3. Click **"Log Reposition"** button
+4. ? **Confirmation appears!**
+
+**What Happens**:
+- ? System records that you repositioned
+- ? Shows time you logged it
+- ? Timer resets for next 30-minute window
+- ? You get a message in your system
+
+**Example**:
+```
+"? Reposition logged at 14:32. 
+ Good job! Remember to log next 
+ reposition in 30 minutes."
+```
+
+---
+
+## ?? NEW NAVIGATION
+
+Now you have **three tabs**:
+
+```
+?? Dashboard  ?  ?? Messages  ?  ?? Profile
+```
+
+Click any tab to switch between them!
+
+---
+
+## ?? TIPS
+
+### Messages Tips
+- ? Type naturally - like texting
+- ? Your message shows in blue
+- ? Clinician messages show in green
+- ? Timestamps help track conversations
+- ? Messages stay for 30 minutes
+
+### Profile Tips
+- ? See who your main doctor is
+- ? See all team members helping you
+- ? Contact info available (phone, email)
+- ? Check availability status
+- ? Update your info anytime
+
+### Reposition Tips
+- ? Log when you actually reposition
+- ? System reminds you every 30 minutes
+- ? Helps track your activity
+- ? Important for your health
+- ? One-click logging
+
+---
+
+## ?? KEY FEATURES
+
+| Feature | Before | Now |
+|---------|--------|-----|
+| Messages | ? Not saved | ? Save & persist |
+| Profile | ? Not available | ? Full page |
+| Clinician | ? Hidden | ? See details |
+| Care Team | ? Not shown | ? Full listing |
+| Log Reposition | ? No tracking | ? One-click logging |
+
+---
+
+## ? FAQ
+
+### Q: Do messages disappear?
+**A**: No! Messages stay for 30 minutes of active use. After that, the session expires and you'll start fresh.
+
+### Q: Can I see who's on my care team?
+**A**: Yes! Click the Profile tab to see:
+- Your primary clinician (doctor)
+- Nurses
+- Physical therapists
+- Dietitians
+- Other specialists
+
+### Q: What's the "Log Reposition" button for?
+**A**: It tracks when you shift position to prevent pressure sores. Click it every time you reposition.
+
+### Q: Where's my profile picture?
+**A**: Currently shows an avatar icon. Your profile picture will be added soon!
+
+### Q: Can I contact my doctor from the app?
+**A**: Yes! On the Profile page, you can:
+- Click to call them
+- Click to email them
+- Send them messages
+
+---
+
+## ?? COMMON WORKFLOWS
+
+### Workflow 1: Check Your Care Team
+```
+1. Click "Profile" tab
+2. See clinician details
+3. See care team members
+4. Note contact information
+5. Done!
+```
+
+### Workflow 2: Message Your Doctor
+```
+1. Click "Messages" tab
+2. Type your message
+3. Click "Send"
+4. ? Message appears in chat
+5. Wait for response
+```
+
+### Workflow 3: Log Reposition
+```
+1. Click "Dashboard" tab
+2. Scroll to "Next Reposition"
+3. Click "Log Reposition"
+4. ? See confirmation
+5. Next 30-minute timer starts
+```
+
+---
+
+## ?? WHAT YOU'LL SEE
+
+### Profile Page Shows
+```
+???????????????????????????????????
+? ?? John Smith                   ?
+?    MRN: 001234                  ?
+?    Room 405, Bed B              ?
+?    Admitted: Oct 20             ?
+???????????????????????????????????
+
+PATIENT INFORMATION
+?? Date of Birth: 03/15/1965
+?? Gender: Male
+?? Phone: +1 (555) 123-4567
+?? Emergency Contact: Jane Smith
+
+HEALTH INFORMATION
+?? Condition: Post-op recovery
+?? Allergies: Penicillin, Latex
+?? Medications: [list]
+
+PRIMARY CLINICIAN
+?? Dr. Sarah Johnson
+?? Orthopedic Surgery
+?? Available ?
+?? [Call] [Email] [Message]
+
+CARE TEAM (3 members)
+?? Maria Garcia - Nurse
+?? Michael Chen - Physical Therapist
+?? Emily Williams - Dietitian
+
+ACTIVITY
+?? Total Messages: 12
+?? Repositions Logged: 18
+?? Days Admitted: 5
+?? Last Updated: Oct 24, 14:32
+```
+
+### Messages Page Shows
+```
+CONVERSATION THREAD
+???????????????????????????????????
+? Clinician          Oct 24, 14:00 ?
+? How are you feeling today?       ?
+???????????????????????????????????
+
+???????????????????????????????????
+? Patient            Oct 24, 14:05 ?
+? Good, no discomfort currently    ?
+???????????????????????????????????
+
+???????????????????????????????????
+? Clinician          Oct 24, 14:10 ?
+? Remember to shift weight every   ?
+? 30 minutes.                      ?
+???????????????????????????????????
+
+[Type your message...]
+[Send button]
+```
+
+---
+
+## ? EVERYTHING WORKS
+
+- ? Profile loads instantly
+- ? Messages save on send
+- ? Messages display immediately
+- ? Log reposition works instantly
+- ? Confirmations always appear
+- ? Responsive on all devices
+- ? Secure & private
+
+---
+
+## ?? GET STARTED NOW
+
+1. **View Profile**: Click "Profile" tab
+2. **Send Message**: Click "Messages" tab ? Type ? Send
+3. **Log Reposition**: Click "Dashboard" ? Find button ? Click
+
+---
+
+## ?? NEED HELP?
+
+From the app, you can:
+1. Message your clinician directly
+2. Click "Contact Support"
+3. View FAQs for answers
+
+---
+
+```
+???????????????????????????????????????
+?                                     ?
+?   YOU'RE ALL SET!                  ?
+?                                     ?
+?   Three new features ready to use   ?
+?   - Profile page                    ?
+?   - Persistent messages             ?
+?   - Log reposition                  ?
+?                                     ?
+?   Start exploring now! ??           ?
+?                                     ?
+???????????????????????????????????????
+```
+
+---
+
+*Last Updated: 2025*  
+*Quick Start Guide v1.0*
