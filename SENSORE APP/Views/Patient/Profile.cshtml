@@ -1,0 +1,552 @@
+@model SENSORE_APP.Models.PatientProfileViewModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Patient Profile";
+}
+
+<!-- Google Fonts - Montserrat for Sensore Brand -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+<!-- Custom styling -->
+<style>
+    body {
+        background: #f7f7f7;
+    }
+
+    .sens-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+    }
+
+    .sens-card-header {
+        background: #0050A0;
+        color: #fff;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .sens-card-body {
+        padding: 1rem;
+    }
+
+    .sensore-brand {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #0050A0;
+    }
+
+    .btn-primary {
+        background: #0050A0;
+        border-color: #0050A0;
+    }
+
+    .btn-primary:hover {
+        background: #003f80;
+    }
+
+    .btn-outline-primary {
+        color: #0050A0;
+        border-color: #0050A0;
+    }
+
+    .btn-outline-primary:hover {
+        background: #0050A0;
+        color: #fff;
+    }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tabs-nav a {
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .tabs-nav a:hover {
+        color: #0050A0;
+    }
+
+    .tabs-nav a[asp-action="Index"] {
+        color: #666;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tabs-nav a[asp-action="Messages"] {
+        color: #666;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tabs-nav a[asp-action="Profile"] {
+        color: #0050A0;
+        border-bottom: 3px solid #0050A0;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, #0050A0 0%, #003f80 100%);
+        color: white;
+        border-radius: 12px;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+    }
+
+    .profile-info h2 {
+        margin: 0;
+        font-size: 1.8rem;
+    }
+
+    .profile-info p {
+        margin: 0.25rem 0;
+        font-size: 0.95rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-item {
+        padding: 0.75rem;
+        background: #f9f9f9;
+        border-radius: 6px;
+        border-left: 4px solid #0050A0;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #0050A0;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .info-value {
+        color: #333;
+        margin-top: 0.25rem;
+    }
+
+    .clinician-card {
+        border: 2px solid #0050A0;
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .clinician-avatar {
+        width: 80px;
+        height: 80px;
+        background: #0050A0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    .clinician-info {
+        flex: 1;
+    }
+
+    .clinician-info h4 {
+        margin: 0 0 0.25rem 0;
+        color: #0050A0;
+    }
+
+    .clinician-info p {
+        margin: 0.25rem 0;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-available {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-busy {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-away {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .team-member-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .team-member-avatar {
+        width: 60px;
+        height: 60px;
+        background: #0050A0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .team-member-info {
+        flex: 1;
+    }
+
+    .team-member-info h5 {
+        margin: 0 0 0.25rem 0;
+        color: #333;
+    }
+
+    .team-member-info p {
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .mobility-indicator {
+        padding: 0.75rem;
+        background: #f0f8ff;
+        border-left: 4px solid #0050A0;
+        border-radius: 4px;
+        margin: 1rem 0;
+    }
+
+    .contact-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .contact-actions a, .contact-actions button {
+        flex: 1;
+        min-width: 100px;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="container-fluid px-4" style="font-size:0.9rem;">
+    <!-- Brand Header -->
+    <div class="d-flex align-items-center mb-4">
+        <h1 class="mb-0 sensore-brand">Sensore</h1>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-nav">
+        <a asp-action="Index" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s ease;"><i class="bi bi-bar-chart"></i> Dashboard</a>
+        <a asp-action="Messages" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s ease;"><i class="bi bi-chat-dots"></i> Messages</a>
+        <a asp-action="Profile" style="padding: 0.75rem 1.5rem; text-decoration: none; color: #0050A0; border-bottom: 3px solid #0050A0; transition: all 0.3s ease;"><i class="bi bi-person-circle"></i> Profile</a>
+    </div>
+
+    <!-- Patient Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <i class="bi bi-person-fill"></i>
+        </div>
+        <div class="profile-info">
+            <h2>@Model.FullName</h2>
+            <p><strong>MRN:</strong> @Model.MedicalRecordNumber</p>
+            <p><strong>Room:</strong> @Model.RoomNumber | <strong>Bed:</strong> @Model.BedNumber</p>
+            <p><strong>Admitted:</strong> @Model.AdmissionDate.ToString("MMM dd, yyyy")</p>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column: Patient Information -->
+        <div class="col-lg-6">
+            <!-- Basic Information -->
+            <div class="sens-card">
+                <div class="sens-card-header">
+                    <i class="bi bi-person"></i> Patient Information
+                </div>
+                <div class="sens-card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Date of Birth</div>
+                            <div class="info-value">@Model.DateOfBirth</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Gender</div>
+                            <div class="info-value">@Model.Gender</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Phone Number</div>
+                            <div class="info-value">
+                                <a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Emergency Contact</div>
+                            <div class="info-value">@Model.EmergencyContact</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Information -->
+            <div class="sens-card">
+                <div class="sens-card-header">
+                    <i class="bi bi-heart-pulse"></i> Health Information
+                </div>
+                <div class="sens-card-body">
+                    <div class="info-item mb-2">
+                        <div class="info-label">Current Condition</div>
+                        <div class="info-value">@Model.CurrentCondition</div>
+                    </div>
+                    <div class="info-item mb-2">
+                        <div class="info-label">Allergies</div>
+                        <div class="info-value">@(string.IsNullOrEmpty(Model.Allergies) ? "None documented" : Model.Allergies)</div>
+                    </div>
+                    <div class="info-item mb-2">
+                        <div class="info-label">Current Medications</div>
+                        <div class="info-value">@(string.IsNullOrEmpty(Model.Medications) ? "None documented" : Model.Medications)</div>
+                    </div>
+                    <div class="mobility-indicator">
+                        <strong>Mobility Level:</strong>
+                        <div class="mt-2">
+                            @Model.MobilityDescription
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Care Team -->
+        <div class="col-lg-6">
+            <!-- Assigned Clinician -->
+            <div class="sens-card">
+                <div class="sens-card-header">
+                    <i class="bi bi-person-badge"></i> Primary Clinician
+                </div>
+                <div class="sens-card-body">
+                    @if (Model.AssignedClinician != null && !string.IsNullOrEmpty(Model.AssignedClinician.FirstName))
+                    {
+                        <div class="clinician-card">
+                            <div class="clinician-avatar">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="clinician-info">
+                                <h4>@Model.AssignedClinician.FullName</h4>
+                                <p><strong>@Model.AssignedClinician.Title</strong> - @Model.AssignedClinician.Specialty</p>
+                                <p>
+                                    <span class="status-badge @(Model.AssignedClinician.AvailabilityStatus.Contains("Available") ? "status-available" : "status-busy")">
+                                        <i class="bi bi-circle-fill"></i> @Model.AssignedClinician.AvailabilityStatus
+                                    </span>
+                                </p>
+                                <p>Last contact: @(Model.AssignedClinician.LastContact != default ? Model.AssignedClinician.LastContact.ToString("MMM dd, HH:mm") : "Never")</p>
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <a href="tel:@Model.AssignedClinician.PhoneNumber" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-telephone"></i> Call
+                            </a>
+                            <a href="mailto:@Model.AssignedClinician.Email" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-envelope"></i> Email
+                            </a>
+                            <a href="@Url.Action("Messages", "Patient")" class="btn btn-sm btn-primary">
+                                <i class="bi bi-chat-dots"></i> Message
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No clinician assigned yet
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Care Team Members -->
+            <div class="sens-card">
+                <div class="sens-card-header">
+                    <i class="bi bi-people"></i> Care Team (@Model.CareTeam.Count)
+                </div>
+                <div class="sens-card-body">
+                    @if (Model.CareTeam != null && Model.CareTeam.Count > 0)
+                    {
+                        @foreach (var member in Model.CareTeam)
+                        {
+                            <div class="team-member-card">
+                                <div class="team-member-avatar">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="team-member-info">
+                                    <h5>@member.FullName</h5>
+                                    <p><strong>@member.Role</strong></p>
+                                    <p>
+                                        <span class="status-badge @(member.IsAvailable ? "status-available" : "status-away")">
+                                            <i class="bi bi-circle-fill"></i> @member.AvailabilityStatus
+                                        </span>
+                                    </p>
+                                    <p class="text-muted">Assigned: @member.AssignedDate.ToString("MMM dd, yyyy")</p>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No care team members assigned
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Summary -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="sens-card">
+                <div class="sens-card-header">
+                    <i class="bi bi-graph-up"></i> Activity Summary
+                </div>
+                <div class="sens-card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-item text-center">
+                                <div class="info-label">Total Messages</div>
+                                <div class="info-value" style="font-size: 1.5rem;">@Model.TotalMessagesCount</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item text-center">
+                                <div class="info-label">Repositions Logged</div>
+                                <div class="info-value" style="font-size: 1.5rem;">@Model.TotalRepositionsLogged</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item text-center">
+                                <div class="info-label">Admission Days</div>
+                                <div class="info-value" style="font-size: 1.5rem;">@((int)(DateTime.Now - Model.AdmissionDate).TotalDays)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-item text-center">
+                                <div class="info-label">Last Updated</div>
+                                <div class="info-value" style="font-size: 0.85rem;">@Model.LastUpdated.ToString("MMM dd, HH:mm")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Section -->
+    <div class="row mt-3 mb-4">
+        <div class="col-md-12">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="bi bi-pencil"></i> Edit Profile
+            </button>
+            <a href="@Url.Action("Index", "Patient")" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #0050A0; color: white;">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="UpdateProfile" method="post">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" name="firstName" value="@Model.FirstName" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" name="lastName" value="@Model.LastName" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" name="phoneNumber" value="@Model.PhoneNumber" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Emergency Contact</label>
+                        <input type="text" class="form-control" name="emergencyContact" value="@Model.EmergencyContact" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Emergency Contact Phone</label>
+                        <input type="tel" class="form-control" name="emergencyContactPhone" value="@Model.EmergencyContactPhone" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Condition</label>
+                        <textarea class="form-control" name="currentCondition" rows="3">@Model.CurrentCondition</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Allergies</label>
+                        <textarea class="form-control" name="allergies" rows="2">@Model.Allergies</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SENSORE_APP</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ALL_BUTTONS_FUNCTIONAL_COMPLETE.md" />
+    <None Remove="BUTTONS_IMPLEMENTATION_SUMMARY.md" />
+    <None Remove="COMPLETION_CERTIFICATE.md" />
+    <None Remove="COMPLETION_CERTIFICATE.txt" />
+    <None Remove="COMPLETION_STATUS.txt" />
+    <None Remove="CSV_HEATMAP_CERTIFICATE.txt" />
+    <None Remove="CSV_HEATMAP_COMPLETION.md" />
+    <None Remove="CSV_HEATMAP_FINAL_SUMMARY.txt" />
+    <None Remove="CSV_HEATMAP_INDEX.md" />
+    <None Remove="CSV_HEATMAP_INTEGRATION_GUIDE.md" />
+    <None Remove="CSV_HEATMAP_QUICK_REFERENCE.txt" />
+    <None Remove="CSV_HEATMAP_QUICK_START.md" />
+    <None Remove="CSV_HEATMAP_START_NOW.md" />
+    <None Remove="CSV_HEATMAP_SUMMARY.md" />
+    <None Remove="CSV_HEATMAP_VISUAL_GUIDE.md" />
+    <None Remove="DESIGN_PATTERNS_COMPREHENSIVE_GUIDE.md" />
+    <None Remove="DESIGN_PATTERNS_DOCUMENTATION_INDEX.md" />
+    <None Remove="DESIGN_PATTERNS_EXAMPLES.md" />
+    <None Remove="DESIGN_PATTERNS_GUIDE.md" />
+    <None Remove="DESIGN_PATTERNS_IMPLEMENTATION_SUMMARY.md" />
+    <None Remove="DESIGN_PATTERNS_MASTER_GUIDE.md" />
+    <None Remove="DESIGN_PATTERNS_QUICK_REFERENCE.md" />
+    <None Remove="DESIGN_PATTERNS_START_HERE.md" />
+    <None Remove="DESIGN_PATTERNS_SUMMARY.txt" />
+    <None Remove="DESIGN_PATTERNS_VISUAL_GUIDE.md" />
+    <None Remove="FINAL_COMPLETION_SUMMARY.md" />
+    <None Remove="FINAL_SUMMARY.txt" />
+    <None Remove="FUNCTIONAL_BUTTONS_GUIDE.md" />
+    <None Remove="HEATMAP_ARCHITECTURE.md" />
+    <None Remove="HEATMAP_DEBUG_GUIDE.md" />
+    <None Remove="ICON_DISPLAY_FIX.md" />
+    <None Remove="IMPLEMENTATION_COMPLETE.md" />
+    <None Remove="IMPLEMENTATION_SUMMARY.md" />
+    <None Remove="INTERACTIVE_BUTTONS_QUICK_START.md" />
+    <None Remove="LAUNCH_SUMMARY.md" />
+    <None Remove="MESSAGES_TAB_GUIDE.md" />
+    <None Remove="NEW_FEATURES_IMPLEMENTATION_GUIDE.md" />
+    <None Remove="NEW_FEATURES_INDEX.md" />
+    <None Remove="NEW_FEATURES_QUICK_START.md" />
+    <None Remove="NEW_FEATURES_SUMMARY.md" />
+    <None Remove="NEW_FEATURES_VISUAL_GUIDE.md" />
+    <None Remove="PROJECT_GUIDE.md" />
+    <None Remove="QUICK_START.md" />
+    <None Remove="README.md" />
+    <None Remove="START_HERE_NEW_FEATURES.md" />
+    <None Remove="TAB_NAVIGATION_FIX.md" />
+    <None Remove="TREND_ARROW_ICONS_FIX.md" />
+  </ItemGroup>
+
+</Project>
