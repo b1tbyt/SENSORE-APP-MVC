@@ -1,0 +1,69 @@
+﻿
+@model GrapheneTrace.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="text-center" style="width:400px;">
+        <img src="~/images/medtech logo.png" asp-append-version="true" alt="Logo" width="60" class="mb-3" />
+        <h2 class="fw-bold">MedTech</h2>
+        <p class="text-muted">Pressure Ulcer Prevention System</p>
+
+        <form method="post" class="card p-4 shadow-sm border-0">
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger text-center p-2 mb-3">
+                    <strong>Error:</strong> @ViewBag.Error
+                </div>
+            }
+            <div class="form-group mb-3 text-start">
+                <label class="fw-semibold">Email</label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="Enter your email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3 text-start">
+                <label class="fw-semibold">Password</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" required />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-4 text-start">
+                <label class="fw-semibold">Login As</label>
+                <select asp-for="Role" class="form-select">
+                    <option value="">Select Role (Optional)</option>
+                    <option value="Patient">Patient</option>
+                    <option value="Clinician">Clinician</option>
+                    <option value="Admin">Administrator</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+        </form>
+
+        <div class="card mt-4 p-3 shadow-sm border-0">
+            <h5 class="fw-semibold mb-3">Quick Demo Login</h5>
+
+            <form method="post" asp-action="Login" class="mb-2">
+                <input type="hidden" name="Email" value="john.davis@patient.com" />
+                <input type="hidden" name="Password" value="Patient123!" />
+                <button type="submit" class="btn btn-outline-secondary w-100">John Smith (Patient Account)</button>
+            </form>
+
+            <form method="post" asp-action="Login" class="mb-2">
+                <input type="hidden" name="Email" value="s.wilson@clinic.com" />
+                <input type="hidden" name="Password" value="Clinician123!" />
+                <button type="submit" class="btn btn-outline-secondary w-100">Dr. Sarah Wilson (Clinician Account)</button>
+            </form>
+
+            <form method="post" asp-action="Login">
+                <input type="hidden" name="Email" value="admin@sensore.com" />
+                <input type="hidden" name="Password" value="Admin123!" />
+                <button type="submit" class="btn btn-outline-secondary w-100">System Administrator</button>
+            </form>
+        </div>
+
+        <footer class="mt-4 text-muted small">© 2025 Sensore • MedTech • Cambridge</footer>
+    </div>
+</div>

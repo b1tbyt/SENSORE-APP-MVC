@@ -1,0 +1,152 @@
+﻿@{
+    ViewData["Title"] = "System Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1"><i class="fas fa-chart-bar me-2 text-success"></i>System Reports</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li><li class="breadcrumb-item active">Reports</li></ol></nav>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@ViewBag.ActivePatients / @ViewBag.TotalPatients</h3>
+                <small>Active / Total Patients</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@ViewBag.ActiveClinicians / @ViewBag.TotalClinicians</h3>
+                <small>Active / Total Clinicians</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@ViewBag.TotalAdmins</h3>
+                <small>System Administrators</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-info text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@ViewBag.TotalAssignments</h3>
+                <small>Patient-Clinician Assignments</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Role Distribution -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><h6 class="m-0 fw-bold"><i class="fas fa-users me-2"></i>User Distribution by Role</h6></div>
+            <div class="card-body">
+                @if (ViewBag.RoleDistribution != null)
+                {
+                    @foreach (var role in ViewBag.RoleDistribution)
+                    {
+                        int total = ViewBag.ActivePatients + ViewBag.ActiveClinicians + ViewBag.TotalAdmins;
+                        int percentage = total > 0 ? (int)((role.Count / (double)total) * 100) : 0;
+                        string barColor = role.Role == "Patient" ? "bg-success" : role.Role == "Clinician" ? "bg-primary" : "bg-danger";
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>@role.Role</span>
+                                <span>@role.Count (@percentage%)</span>
+                            </div>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar @barColor" style="width: @percentage%">@role.Count users</div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Registrations -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><h6 class="m-0 fw-bold"><i class="fas fa-chart-line me-2"></i>Monthly Registrations (Last 6 Months)</h6></div>
+            <div class="card-body">
+                @if (ViewBag.MonthlyRegistrations != null)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Month</th><th>Registrations</th><th>Visual</th></tr></thead>
+                            <tbody>
+                                @foreach (var item in ViewBag.MonthlyRegistrations)
+                                {
+                                    string monthName = new DateTime(item.Year, item.Month, 1).ToString("MMM yyyy");
+                                    <tr>
+                                        <td>@monthName</td>
+                                        <td><strong>@item.Count</strong></td>
+                                        <td>
+                                            <div class="progress" style="height: 20px; width: 150px;">
+                                                <div class="progress-bar bg-info" style="width: @(Math.Min(item.Count * 20, 100))%"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No registration data available.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white d-flex justify-content-between">
+        <h6 class="m-0 fw-bold"><i class="fas fa-history me-2"></i>Recent Administrative Activity</h6>
+        <a asp-action="AuditLogs" class="btn btn-sm btn-outline-light">View All</a>
+    </div>
+    <div class="card-body p-0">
+        @if (ViewBag.RecentActivity != null && ((IEnumerable<GrapheneTrace.Models.AuditLog>)ViewBag.RecentActivity).Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Action</th><th>Details</th><th>Performed By</th><th>Time</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in (IEnumerable<GrapheneTrace.Models.AuditLog>)ViewBag.RecentActivity)
+                        {
+                            string badgeClass = log.Action.Contains("DELETE") ? "bg-danger" : log.Action.Contains("CREATE") ? "bg-success" : "bg-info";
+                            <tr>
+                                <td><span class="badge @badgeClass">@log.Action</span></td>
+                                <td><small>@log.Details</small></td>
+                                <td>@log.PerformedBy</td>
+                                <td><small>@log.Timestamp.ToString("MMM dd, HH:mm")</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-2"></i>
+                <p class="text-muted">No recent activity recorded.</p>
+            </div>
+        }
+    </div>
+</div>

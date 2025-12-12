@@ -1,0 +1,271 @@
+﻿@model IEnumerable<GrapheneTrace.Models.PatientClinician>
+@{
+    ViewData["Title"] = "View All Assignments";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-list me-2 text-info"></i>Patient-Clinician Assignments
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">All Assignments</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="AssignPatient" class="btn btn-success me-2">
+                <i class="fas fa-plus me-2"></i>New Assignment
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-primary fw-bold small mb-1">Total Assignments</div>
+                            <div class="h3 mb-0 fw-bold">@Model.Count()</div>
+                        </div>
+                        <i class="fas fa-link fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-success fw-bold small mb-1">Patients Assigned</div>
+                            <div class="h3 mb-0 fw-bold">@Model.Select(a => a.PatientId).Distinct().Count()</div>
+                        </div>
+                        <i class="fas fa-user-injured fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-start border-info border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-info fw-bold small mb-1">Clinicians Active</div>
+                            <div class="h3 mb-0 fw-bold">@Model.Select(a => a.ClinicianId).Distinct().Count()</div>
+                        </div>
+                        <i class="fas fa-user-md fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white py-3">
+            <h6 class="m-0 fw-bold">
+                <i class="fas fa-table me-2"></i>All Assignments
+            </h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover" id="assignmentsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Patient</th>
+                                <th>Clinician</th>
+                                <th>Specialization</th>
+                                <th>Assignment Date</th>
+                                <th>Notes</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var assignment in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-2 bg-success text-white">
+                                                @assignment.Patient?.FirstName[0]@assignment.Patient?.LastName[0]
+                                            </div>
+                                            <div>
+                                                <strong>@assignment.Patient?.FirstName @assignment.Patient?.LastName</strong><br>
+                                                <small class="text-muted">@assignment.Patient?.Email</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-2 bg-primary text-white">
+                                                @assignment.Clinician?.FirstName[0]@assignment.Clinician?.LastName[0]
+                                            </div>
+                                            <div>
+                                                <strong>Dr. @assignment.Clinician?.FirstName @assignment.Clinician?.LastName</strong><br>
+                                                <small class="text-muted">@assignment.Clinician?.Email</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@assignment.Clinician?.Specialization</span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-calendar-alt me-1 text-muted"></i>
+                                        @assignment.AssignmentDate.ToString("MMM dd, yyyy")
+                                        <br>
+                                        <small class="text-muted">
+                                            @{
+                                                var daysAgo = (DateTime.Now - assignment.AssignmentDate).Days;
+                                                if (daysAgo == 0)
+                                                {
+                                                    <text>Today</text>
+                                                }
+                                                else if (daysAgo == 1)
+                                                {
+                                                    <text>1 day ago</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>@daysAgo days ago</text>
+                                                }
+                                            }
+                                        </small>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(assignment.Notes))
+                                        {
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;"
+                                                  data-bs-toggle="tooltip" title="@assignment.Notes">
+                                                @assignment.Notes
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <!-- View Patient Details -->
+                                            <a asp-action="Details" asp-route-id="@assignment.PatientId"
+                                               class="btn btn-outline-success" title="View Patient">
+                                                <i class="fas fa-user-injured"></i>
+                                            </a>
+                                            <!-- View Clinician Details -->
+                                            <a asp-action="Details" asp-route-id="@assignment.ClinicianId"
+                                               class="btn btn-outline-primary" title="View Clinician">
+                                                <i class="fas fa-user-md"></i>
+                                            </a>
+                                            <!-- Remove Assignment -->
+                                            <form asp-action="RemoveAssignment" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to remove this assignment?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="patientId" value="@assignment.PatientId" />
+                                                <input type="hidden" name="clinicianId" value="@assignment.ClinicianId" />
+                                                <button type="submit" class="btn btn-outline-danger" title="Remove Assignment">
+                                                    <i class="fas fa-unlink"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Assignments Found</h4>
+                    <p class="text-muted">There are no patient-clinician assignments yet.</p>
+                    <a asp-action="AssignPatient" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Create First Assignment
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialise DataTable
+            $('#assignmentsTable').DataTable({
+                pageLength: 10,
+                order: [[3, 'desc']], // Sort by assignment date descending
+                columnDefs: [
+                    { orderable: false, targets: 5 } // Disable sorting on Actions column
+                ],
+                language: {
+                    search: "<i class='fas fa-search'></i>",
+                    searchPlaceholder: "Search assignments..."
+                }
+            });
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            // Auto-hide alerts
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+        });
+    </script>
+}

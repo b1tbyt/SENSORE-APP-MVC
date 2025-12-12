@@ -1,0 +1,104 @@
+﻿@model IEnumerable<GrapheneTrace.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Logs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1"><i class="fas fa-history me-2 text-warning"></i>Audit Logs</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li><li class="breadcrumb-item active">Audit Logs</li></ol></nav>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
+</div>
+
+<!-- Filter -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="AuditLogs" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Filter by Action</label>
+                <select name="actionFilter" class="form-select">
+                    <option value="">All Actions</option>
+                    @if (ViewBag.ActionTypes != null)
+                    {
+                        @foreach (var action in ViewBag.ActionTypes)
+                        {
+                            <option value="@action" selected="@(ViewBag.ActionFilter == action)">@action</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i>Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white"><h6 class="m-0 fw-bold"><i class="fas fa-clipboard-list me-2"></i>Activity Log</h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>Performed By</th>
+                    <th>IP Address</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var log in Model)
+                    {
+                        string badgeClass = log.Action.Contains("DELETE") ? "bg-danger" : 
+                                           log.Action.Contains("CREATE") ? "bg-success" : 
+                                           log.Action.Contains("UPDATE") ? "bg-info" : 
+                                           log.Action.Contains("ACTIVATE") ? "bg-warning" : "bg-secondary";
+                        <tr>
+                            <td><small class="text-muted">@log.LogId</small></td>
+                            <td><span class="badge @badgeClass">@log.Action</span></td>
+                            <td><small>@log.Details</small></td>
+                            <td><strong>@log.PerformedBy</strong></td>
+                            <td><code>@log.IpAddress</code></td>
+                            <td>
+                                <span title="@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")">
+                                    @log.Timestamp.ToString("MMM dd, yyyy HH:mm")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-clipboard fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No audit logs found</h5>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span>Page @ViewBag.CurrentPage of @ViewBag.TotalPages</span>
+            <nav>
+                <ul class="pagination mb-0">
+                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="AuditLogs" asp-route-pageNumber="@i" asp-route-actionFilter="@ViewBag.ActionFilter">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

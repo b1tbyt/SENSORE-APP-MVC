@@ -1,0 +1,335 @@
+﻿@model IEnumerable<GrapheneTrace.Models.User>
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- SweetAlert2 CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    .search-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .search-section .form-control, .search-section .form-select { border: none; border-radius: 10px; padding: 0.75rem 1rem; }
+    .stat-card { transition: all 0.3s ease; border-radius: 15px; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+    .stat-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .avatar-circle { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; color: white; }
+    .avatar-patient { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .avatar-clinician { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .avatar-admin { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+    .role-badge { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .role-patient { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+    .role-clinician { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .role-admin { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; }
+    .action-btn { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+    .action-btn:hover { transform: scale(1.1); }
+    .pagination .page-link { border-radius: 8px; margin: 0 3px; }
+    .pagination .page-item.active .page-link { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1 fw-bold">Sensore Admin Dashboard</h1>
+        <p class="text-muted mb-0"><i class="fas fa-clock me-1"></i>@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+    </div>
+    <div class="d-flex align-items-center">
+        <span class="me-3 text-muted">Welcome, <strong class="text-primary">@User.Identity?.Name</strong></span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm"><i class="fas fa-sign-out-alt me-1"></i>Logout</a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 text-uppercase small fw-bold">Total Patients</p>
+                        <h2 class="mb-0 fw-bold" id="stat-patients">@ViewBag.TotalPatients</h2>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fas fa-user-injured"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 text-uppercase small fw-bold">Clinicians</p>
+                        <h2 class="mb-0 fw-bold" id="stat-clinicians">@ViewBag.TotalClinicians</h2>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-md"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 text-uppercase small fw-bold">System Admins</p>
+                        <h2 class="mb-0 fw-bold" id="stat-admins">@ViewBag.TotalAdmins</h2>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-cog"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 text-uppercase small fw-bold">Active Alerts</p>
+                        <h2 class="mb-0 fw-bold">@ViewBag.ActiveAlerts</h2>
+                    </div>
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-exclamation-triangle"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-4">
+    <a asp-action="Create" class="btn btn-success me-2"><i class="fas fa-user-plus me-2"></i>Add New User</a>
+    <a asp-action="AssignPatient" class="btn btn-primary me-2"><i class="fas fa-link me-2"></i>Assign Patient</a>
+    <a asp-action="ViewAssignments" class="btn btn-info me-2"><i class="fas fa-list me-2"></i>View Assignments</a>
+    <a asp-action="ExportUsers" class="btn btn-outline-secondary me-2"><i class="fas fa-download me-2"></i>Export CSV</a>
+    <a asp-action="AuditLogs" class="btn btn-outline-dark"><i class="fas fa-history me-2"></i>Audit Logs</a>
+</div>
+
+<!-- Search Section -->
+<div class="search-section">
+    <form asp-action="Index" method="get">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-white fw-semibold"><i class="fas fa-search me-1"></i>Search Users</label>
+                <input type="text" name="searchString" class="form-control" placeholder="Search by name or email..." value="@ViewBag.CurrentSearch">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-white fw-semibold"><i class="fas fa-user-tag me-1"></i>Role</label>
+                <select name="roleFilter" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="Patient" selected="@(ViewBag.CurrentRole == "Patient")">Patients</option>
+                    <option value="Clinician" selected="@(ViewBag.CurrentRole == "Clinician")">Clinicians</option>
+                    <option value="Admin" selected="@(ViewBag.CurrentRole == "Admin")">Admins</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-white fw-semibold"><i class="fas fa-toggle-on me-1"></i>Status</label>
+                <select name="statusFilter" class="form-select">
+                    <option value="">Active Only</option>
+                    <option value="active" selected="@(ViewBag.CurrentStatus == "active")">Active</option>
+                    <option value="inactive" selected="@(ViewBag.CurrentStatus == "inactive")">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-white fw-semibold"><i class="fas fa-list-ol me-1"></i>Per Page</label>
+                <select name="pageSize" class="form-select">
+                    <option value="10" selected="@(ViewBag.CurrentPageSize == 10)">10</option>
+                    <option value="25" selected="@(ViewBag.CurrentPageSize == 25)">25</option>
+                    <option value="50" selected="@(ViewBag.CurrentPageSize == 50)">50</option>
+                </select>
+            </div>
+   </form>
+</div>
+
+<!-- User Table -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between">
+        <h6 class="m-0 fw-bold"><i class="fas fa-users me-2"></i>User Management <span class="badge bg-light text-dark ms-2">@ViewBag.TotalItems users</span></h6>
+        <button class="btn btn-sm btn-outline-light" onclick="refreshStats()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th><a asp-action="Index" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-sortOrder="@ViewBag.NameSortParam" asp-route-pageSize="@ViewBag.CurrentPageSize" class="text-white text-decoration-none">Name <i class="fas fa-sort"></i></a></th>
+                    <th><a asp-action="Index" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-sortOrder="@ViewBag.EmailSortParam" asp-route-pageSize="@ViewBag.CurrentPageSize" class="text-white text-decoration-none">Email <i class="fas fa-sort"></i></a></th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th><a asp-action="Index" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-sortOrder="@ViewBag.DateSortParam" asp-route-pageSize="@ViewBag.CurrentPageSize" class="text-white text-decoration-none">Created <i class="fas fa-sort"></i></a></th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var user in Model)
+                    {
+                        string avatarClass = user.Role == "Patient" ? "avatar-patient" : user.Role == "Clinician" ? "avatar-clinician" : "avatar-admin";
+                        string roleClass = user.Role == "Patient" ? "role-patient" : user.Role == "Clinician" ? "role-clinician" : "role-admin";
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle @avatarClass me-3">@user.FirstName[0]@user.LastName[0]</div>
+                                    <div>
+                                        <strong>@(user.Role == "Clinician" ? "Dr. " : "")@user.FirstName @user.LastName</strong><br>
+                                        <small class="text-muted">ID: @user.UserId</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><a href="mailto:@user.Email" class="text-decoration-none">@user.Email</a></td>
+                            <td><span class="role-badge @roleClass">@user.Role</span></td>
+                            <td>
+                                <span class="badge @(user.IsActive ? "bg-success" : "bg-secondary")">
+                                    <i class="fas @(user.IsActive ? "fa-check-circle" : "fa-times-circle") me-1"></i>@(user.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="text-center">
+                                <div class="btn-group">
+                                    <a asp-action="Edit" asp-route-id="@user.UserId" class="action-btn btn btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <a asp-action="Details" asp-route-id="@user.UserId" class="action-btn btn btn-outline-info" title="Details"><i class="fas fa-eye"></i></a>
+                                    <button class="action-btn btn btn-outline-warning" onclick="toggleUserStatus(@user.UserId, '@user.FirstName @user.LastName')" title="Toggle Status"><i class="fas fa-user-slash"></i></button>
+                                    <button class="action-btn btn btn-outline-danger" onclick="confirmDelete(@user.UserId, '@user.FirstName @user.LastName')" title="Delete"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" class="text-center py-5"><i class="fas fa-users-slash fa-3x text-muted mb-3"></i><h5 class="text-muted">No users found</h5></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span>Page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems total)</span>
+            <nav>
+                <ul class="pagination mb-0">
+                    @if (ViewBag.HasPreviousPage)
+                    {
+                        <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pageNumber="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-pageSize="@ViewBag.CurrentPageSize"><i class="fas fa-chevron-left"></i></a></li>
+                    }
+                    @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min((int)ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")"><a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-pageSize="@ViewBag.CurrentPageSize">@i</a></li>
+                    }
+                    @if (ViewBag.HasNextPage)
+                    {
+                        <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pageNumber="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-roleFilter="@ViewBag.CurrentRole" asp-route-statusFilter="@ViewBag.CurrentStatus" asp-route-pageSize="@ViewBag.CurrentPageSize"><i class="fas fa-chevron-right"></i></a></li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Bottom Row -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><h6 class="m-0 fw-bold"><i class="fas fa-user-clock me-2"></i>Recent Registrations</h6></div>
+            <ul class="list-group list-group-flush">
+                @if (ViewBag.RecentUsers != null)
+                {
+                    @foreach (var user in (IEnumerable<GrapheneTrace.Models.User>)ViewBag.RecentUsers)
+                    {
+                        string avatarClass = user.Role == "Patient" ? "avatar-patient" : user.Role == "Clinician" ? "avatar-clinician" : "avatar-admin";
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle @avatarClass me-3" style="width:40px;height:40px;font-size:0.8rem;">@user.FirstName[0]@user.LastName[0]</div>
+                                <div>
+                                    <strong>@user.FirstName @user.LastName</strong><br>
+                                    <small class="text-muted">@user.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                </div>
+                            </div>
+                            <span class="role-badge role-@user.Role.ToLower()">@user.Role</span>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white d-flex justify-content-between"><h6 class="m-0 fw-bold"><i class="fas fa-server me-2"></i>System Overview</h6><span class="badge bg-success">Operational</span></div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-database me-2 text-primary"></i>Database</span><span class="badge bg-success">Connected</span></li>
+                <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-users me-2 text-info"></i>Total Users</span><strong>@(ViewBag.TotalPatients + ViewBag.TotalClinicians + ViewBag.TotalAdmins)</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-link me-2 text-warning"></i>Assignments</span><strong>@ViewBag.TotalAssignments</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-clock me-2"></i>Server Time</span><span id="serverTime">@DateTime.Now.ToString("HH:mm:ss")</span></li>
+            </ul>
+            <div class="card-footer">
+                <a asp-action="SystemSettings" class="btn btn-outline-primary w-100 mb-2"><i class="fas fa-cog me-2"></i>System Settings</a>
+                <a asp-action="Reports" class="btn btn-outline-secondary w-100"><i class="fas fa-chart-bar me-2"></i>View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <text>
+        Swal.fire({ icon: 'success', title: 'Success!', text: '@TempData["SuccessMessage"]', timer: 3000, showConfirmButton: false, toast: true, position: 'top-end' });
+        </text>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <text>
+        Swal.fire({ icon: 'error', title: 'Error', text: '@TempData["ErrorMessage"]' });
+        </text>
+    }
+
+    function confirmDelete(userId, userName) {
+        Swal.fire({
+            title: 'Delete User?',
+            html: `<p>Are you sure you want to delete <strong>${userName}</strong>?</p><div class="mt-3"><button class="btn btn-warning me-2" onclick="softDelete(${userId})"><i class="fas fa-user-slash me-1"></i>Deactivate</button><button class="btn btn-danger" onclick="hardDelete(${userId})"><i class="fas fa-trash me-1"></i>Delete Permanently</button></div>`,
+            icon: 'warning', showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Cancel'
+        });
+    }
+
+    function softDelete(userId) {
+        Swal.close();
+        $.post('@Url.Action("Delete")', { id: userId }, function(response) {
+            if (response.success) { Swal.fire({ icon: 'success', title: 'Deactivated', text: response.message, timer: 2000 }).then(() => location.reload()); }
+            else { Swal.fire('Error', response.message, 'error'); }
+        }).fail(function() { Swal.fire('Error', 'An error occurred', 'error'); });
+    }
+
+    function hardDelete(userId) {
+        Swal.fire({ title: 'Permanent Delete?', text: 'This CANNOT be undone!', icon: 'error', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Delete Forever' }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("HardDelete")', { id: userId }, function(response) {
+                    if (response.success) { Swal.fire('Deleted!', response.message, 'success').then(() => location.reload()); }
+                    else { Swal.fire('Error', response.message, 'error'); }
+                });
+            }
+        });
+    }
+
+    function toggleUserStatus(userId, userName) {
+        Swal.fire({ title: 'Toggle Status?', text: `Change status for ${userName}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Yes' }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("ToggleStatus")/' + userId, function(response) {
+                    if (response.success) { Swal.fire({ icon: 'success', title: 'Updated', text: response.message, timer: 2000 }).then(() => location.reload()); }
+                    else { Swal.fire('Error', response.message, 'error'); }
+                });
+            }
+        });
+    }
+
+    function refreshStats() {
+        $.get('@Url.Action("GetUserStats")', function(data) {
+            $('#stat-patients').text(data.totalPatients);
+            $('#stat-clinicians').text(data.totalClinicians);
+            $('#stat-admins').text(data.totalAdmins);
+            Swal.fire({ icon: 'success', title: 'Refreshed!', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
+        });
+    }
+
+    setInterval(function() { document.getElementById('serverTime').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); }, 1000);
+</script>
+}

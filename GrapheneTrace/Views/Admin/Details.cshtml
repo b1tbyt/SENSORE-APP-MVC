@@ -1,0 +1,320 @@
+﻿@model GrapheneTrace.Models.UserDetailsViewModel
+@{
+    ViewData["Title"] = "User Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-user me-2 text-info"></i>User Details
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-action="Index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">User Details</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.User.UserId" class="btn btn-primary me-2">
+                <i class="fas fa-edit me-2"></i>Edit User
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Profile Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-@(Model.User.Role == "Admin" ? "danger" : Model.User.Role == "Clinician" ? "primary" : "success") text-white py-3">
+                    <h6 class="m-0 fw-bold">
+                        <i class="fas fa-id-card me-2"></i>Profile Information
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="avatar-circle-xl mx-auto mb-3 bg-@(Model.User.Role == "Admin" ? "danger" : Model.User.Role == "Clinician" ? "primary" : "success") text-white">
+                        @Model.User.FirstName[0]@Model.User.LastName[0]
+                    </div>
+                    <h4 class="mb-1">@(Model.User.Role == "Clinician" ? "Dr. " : "")@Model.User.FullName</h4>
+                    <span class="badge @(Model.User.Role == "Admin" ? "bg-danger" : Model.User.Role == "Clinician" ? "bg-primary" : "bg-success") mb-3">
+                        @Model.User.Role
+                    </span>
+                    <hr>
+                    <div class="text-start">
+                        <p class="mb-2">
+                            <i class="fas fa-envelope me-2 text-muted"></i>
+                            <strong>Email:</strong><br>
+                            <span class="ms-4">@Model.User.Email</span>
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-calendar-alt me-2 text-muted"></i>
+                            <strong>Joined:</strong><br>
+                            <span class="ms-4">@Model.User.CreatedAt.ToString("MMMM dd, yyyy 'at' hh:mm tt")</span>
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-toggle-on me-2 text-muted"></i>
+                            <strong>Status:</strong>
+                            <span class="badge @(Model.User.IsActive ? "bg-success" : "bg-secondary") ms-2">
+                                @(Model.User.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </p>
+                        <p class="mb-0">
+                            <i class="fas fa-fingerprint me-2 text-muted"></i>
+                            <strong>User ID:</strong><br>
+                            <span class="ms-4 font-monospace">@Model.User.UserId</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role-Specific Details -->
+        <div class="col-lg-8 mb-4">
+            <!-- Patient Details -->
+            @if (Model.Patient != null)
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white py-3">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-heartbeat me-2"></i>Patient Medical Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Medical Condition</h6>
+                                <p class="border rounded p-3 bg-light">
+                                    @(string.IsNullOrEmpty(Model.Patient.MedicalCondition) ? "Not specified" : Model.Patient.MedicalCondition)
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Mobility Level</h6>
+                                <p>
+                                    @{
+                                        var mobilityBadge = Model.Patient.MobilityLevel switch
+                                        {
+                                            "Normal" => "bg-success",
+                                            "Limited" => "bg-warning",
+                                            "Wheelchair" => "bg-info",
+                                            "Bed-bound" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                        var mobilityIcon = Model.Patient.MobilityLevel switch
+                                        {
+                                            "Normal" => "fa-walking",
+                                            "Limited" => "fa-crutch",
+                                            "Wheelchair" => "fa-wheelchair",
+                                            "Bed-bound" => "fa-bed",
+                                            _ => "fa-question"
+                                        };
+                                    }
+                                    <span class="badge @mobilityBadge fs-6">
+                                        <i class="fas @mobilityIcon me-2"></i>@Model.Patient.MobilityLevel
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient's Assigned Clinicians -->
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-user-md me-2"></i>Assigned Clinicians (@Model.Assignments.Count)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Assignments.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Clinician</th>
+                                            <th>Specialization</th>
+                                            <th>Assignment Date</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var assignment in Model.Assignments)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>Dr. @assignment.Clinician?.FirstName @assignment.Clinician?.LastName</strong><br>
+                                                    <small class="text-muted">@assignment.Clinician?.Email</small>
+                                                </td>
+                                                <td>@assignment.Clinician?.Specialization</td>
+                                                <td>@assignment.AssignmentDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@(string.IsNullOrEmpty(assignment.Notes) ? "-" : assignment.Notes)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>This patient has not been assigned to any clinician yet.
+                                <a asp-action="AssignPatient" class="alert-link">Assign now</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Clinician Details -->
+            @if (Model.Clinician != null)
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-stethoscope me-2"></i>Professional Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-2">License Number</h6>
+                                <p class="font-monospace">@Model.Clinician.LicenseNumber</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-2">Specialization</h6>
+                                <p><span class="badge bg-info fs-6">@Model.Clinician.Specialization</span></p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-2">Department</h6>
+                                <p>@Model.Clinician.Department</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-2">Contact Phone</h6>
+                                <p><i class="fas fa-phone me-2 text-muted"></i>@Model.Clinician.ContactPhone</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinician's Assigned Patients -->
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-users me-2"></i>Assigned Patients (@Model.Assignments.Count)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Assignments.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Mobility</th>
+                                            <th>Assignment Date</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var assignment in Model.Assignments)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@assignment.Patient?.FirstName @assignment.Patient?.LastName</strong><br>
+                                                    <small class="text-muted">@assignment.Patient?.Email</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-secondary">@assignment.Patient?.MobilityLevel</span>
+                                                </td>
+                                                <td>@assignment.AssignmentDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@(string.IsNullOrEmpty(assignment.Notes) ? "-" : assignment.Notes)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>This clinician has no patients assigned yet.
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Admin Details -->
+            @if (Model.Admin != null)
+            {
+                <div class="card shadow">
+                    <div class="card-header bg-danger text-white py-3">
+                        <h6 class="m-0 fw-bold">
+                            <i class="fas fa-shield-alt me-2"></i>Administrator Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Access Level</h6>
+                                <p>
+                                    @{
+                                        var accessBadge = Model.Admin.AccessLevel switch
+                                        {
+                                            "Standard" => "bg-secondary",
+                                            "Full" => "bg-warning",
+                                            "Super" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @accessBadge fs-6">
+                                        <i class="fas fa-key me-2"></i>@Model.Admin.AccessLevel
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Permissions</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-check text-success me-2"></i>User Management</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Patient-Clinician Assignments</li>
+                                    @if (Model.Admin.AccessLevel == "Full" || Model.Admin.AccessLevel == "Super")
+                                    {
+                                        <li><i class="fas fa-check text-success me-2"></i>System Configuration</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Report Generation</li>
+                                    }
+                                    @if (Model.Admin.AccessLevel == "Super")
+                                    {
+                                        <li><i class="fas fa-check text-success me-2"></i>Admin Management</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Database Operations</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .avatar-circle-xl {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 2.5rem;
+        }
+    </style>
+}
