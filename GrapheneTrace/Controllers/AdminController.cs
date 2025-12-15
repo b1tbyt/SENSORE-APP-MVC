@@ -8,7 +8,29 @@ using System.Text;
 
 namespace GrapheneTrace.Controllers
 {
- 
+    /// <summary>
+    /// AdminController - Handles all administrative operations for the Sensore system.
+    /// 
+    /// RESPONSIBILITIES:
+    /// - User Management (CRUD operations for Patients, Clinicians, Admins)
+    /// - Patient-Clinician Assignment Management
+    /// - System Statistics and Dashboard
+    /// - Audit Logging for administrative actions
+    /// 
+    /// DESIGN PATTERNS:
+    /// - Repository Pattern (via ApplicationDbContext)
+    /// - Dependency Injection (constructor injection)
+    /// - Single Responsibility Principle (each region handles one concern)
+    /// 
+    /// SECURITY:
+    /// - Role-based authorization (Admin only)
+    /// - Anti-forgery token validation on all POST actions
+    /// - Password hashing using SHA256
+    /// - Soft delete to preserve data integrity
+    /// 
+    /// Author: [Your Name]
+    /// Last Modified: December 2025
+    /// </summary>
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
@@ -25,7 +47,12 @@ namespace GrapheneTrace.Controllers
 
         #region Constructor
 
-       
+        /// <summary>
+        /// Constructor with dependency injection for database context and logging.
+        /// Following Dependency Inversion Principle (DIP) - depend on abstractions.
+        /// </summary>
+        /// <param name="context">Entity Framework database context</param>
+        /// <param name="logger">ILogger for audit and error logging</param>
         public AdminController(ApplicationDbContext context, ILogger<AdminController> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -36,7 +63,10 @@ namespace GrapheneTrace.Controllers
 
         #region Dashboard
 
-       
+        /// <summary>
+        /// GET: Admin/Index
+        /// Main dashboard with user statistics, search, filtering, and pagination.
+        /// </summary>
         public async Task<IActionResult> Index(
             string searchString = "",
             string roleFilter = "",
@@ -68,14 +98,18 @@ namespace GrapheneTrace.Controllers
                 ViewBag.RoleSortParam = sortOrder == "role_asc" ? "role_desc" : "role_asc";
                 ViewBag.DateSortParam = sortOrder == "date_asc" ? "date_desc" : "date_asc";
 
-              
+                // ============================================
+                // STATISTICS CARDS - Gather dashboard metrics
+                // ============================================
                 ViewBag.TotalPatients = await _context.Patients.CountAsync(p => p.IsActive);
                 ViewBag.TotalClinicians = await _context.Clinicians.CountAsync(c => c.IsActive);
                 ViewBag.TotalAdmins = await _context.Admins.CountAsync(a => a.IsActive);
                 ViewBag.TotalAssignments = await _context.PatientClinicians.CountAsync();
                 ViewBag.ActiveAlerts = 0;
 
-                
+                // ============================================
+                // BUILD QUERY - Apply filters progressively
+                // ============================================
                 IQueryable<User> usersQuery = _context.Users.AsQueryable();
 
                 // Apply search filter (searches name and email)
@@ -107,6 +141,9 @@ namespace GrapheneTrace.Controllers
                     usersQuery = usersQuery.Where(u => u.IsActive);
                 }
 
+                // ============================================
+                // SORTING - Apply column sorting
+                // ============================================
                 usersQuery = sortOrder switch
                 {
                     "name_asc" => usersQuery.OrderBy(u => u.FirstName).ThenBy(u => u.LastName),
@@ -120,7 +157,9 @@ namespace GrapheneTrace.Controllers
                     _ => usersQuery.OrderByDescending(u => u.CreatedAt)
                 };
 
-               
+                // ============================================
+                // PAGINATION - Calculate page metrics
+                // ============================================
                 int totalItems = await usersQuery.CountAsync();
                 int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
@@ -167,7 +206,10 @@ namespace GrapheneTrace.Controllers
             }
         }
 
-       
+        /// <summary>
+        /// GET: Admin/SystemSettings
+        /// Displays system configuration options.
+        /// </summary>
         public async Task<IActionResult> SystemSettings()
         {
             _logger.LogInformation("System settings accessed by {User}", User.Identity?.Name);
@@ -182,7 +224,10 @@ namespace GrapheneTrace.Controllers
             return View();
         }
 
-    
+        /// <summary>
+        /// GET: Admin/Reports
+        /// Displays system reports and analytics.
+        /// </summary>
         public async Task<IActionResult> Reports()
         {
             _logger.LogInformation("Reports accessed by {User}", User.Identity?.Name);
@@ -230,13 +275,19 @@ namespace GrapheneTrace.Controllers
 
         #region Create User
 
-        
+        /// <summary>
+        /// GET: Admin/Create
+        /// Displays the user creation form.
+        /// </summary>
         public IActionResult Create()
         {
             return View(new UserCreateViewModel());
         }
 
-       
+        /// <summary>
+        /// POST: Admin/Create
+        /// Creates a new user with validation and audit logging.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(UserCreateViewModel model)
@@ -342,7 +393,10 @@ namespace GrapheneTrace.Controllers
 
         #region Edit User
 
-        
+        /// <summary>
+        /// GET: Admin/Edit/{id}
+        /// Displays the edit form.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -364,7 +418,10 @@ namespace GrapheneTrace.Controllers
             return View(viewModel);
         }
 
-       
+        /// <summary>
+        /// POST: Admin/Edit/{id}
+        /// Updates user information.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, UserEditViewModel model)
@@ -425,7 +482,10 @@ namespace GrapheneTrace.Controllers
 
         #region Delete User
 
-        
+        /// <summary>
+        /// GET: Admin/Delete/{id}
+        /// Displays deletion confirmation.
+        /// </summary>
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -439,7 +499,10 @@ namespace GrapheneTrace.Controllers
             return View(user);
         }
 
-        
+        /// <summary>
+        /// POST: Admin/Delete/{id}
+        /// Soft delete (deactivation).
+        /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -495,7 +558,10 @@ namespace GrapheneTrace.Controllers
             }
         }
 
-        
+        /// <summary>
+        /// POST: Admin/HardDelete/{id}
+        /// Permanent deletion.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> HardDelete(int id)
@@ -550,7 +616,9 @@ namespace GrapheneTrace.Controllers
 
         #region User Details
 
-        
+        /// <summary>
+        /// GET: Admin/Details/{id}
+        /// </summary>
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -590,14 +658,18 @@ namespace GrapheneTrace.Controllers
 
         #region Patient-Clinician Assignments
 
-        
+        /// <summary>
+        /// GET: Admin/AssignPatient
+        /// </summary>
         public async Task<IActionResult> AssignPatient()
         {
             await PopulateAssignmentDropdownsAsync();
             return View(new PatientClinicianAssignmentViewModel());
         }
 
-       
+        /// <summary>
+        /// POST: Admin/AssignPatient
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignPatient(PatientClinicianAssignmentViewModel model)
@@ -647,6 +719,9 @@ namespace GrapheneTrace.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// GET: Admin/ViewAssignments
+        /// </summary>
         public async Task<IActionResult> ViewAssignments(string searchTerm = "")
         {
             var query = _context.PatientClinicians
@@ -673,7 +748,9 @@ namespace GrapheneTrace.Controllers
             return View(assignments);
         }
 
-       
+        /// <summary>
+        /// POST: Admin/RemoveAssignment
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveAssignment(int patientId, int clinicianId)
@@ -712,7 +789,9 @@ namespace GrapheneTrace.Controllers
 
         #region Audit Logs
 
-       
+        /// <summary>
+        /// GET: Admin/AuditLogs
+        /// </summary>
         public async Task<IActionResult> AuditLogs(string actionFilter = "", int pageNumber = 1)
         {
             try
@@ -755,7 +834,9 @@ namespace GrapheneTrace.Controllers
 
         #region AJAX Endpoints
 
-       
+        /// <summary>
+        /// POST: Admin/ToggleStatus/{id}
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
@@ -788,7 +869,9 @@ namespace GrapheneTrace.Controllers
             }
         }
 
-        
+        /// <summary>
+        /// GET: Admin/GetUserStats
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetUserStats()
         {
@@ -803,7 +886,9 @@ namespace GrapheneTrace.Controllers
             return Json(stats);
         }
 
-        
+        /// <summary>
+        /// GET: Admin/ExportUsers
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ExportUsers()
         {

@@ -3,7 +3,10 @@ using GrapheneTrace.Models;
 
 namespace GrapheneTrace.Data
 {
-  
+    /// <summary>
+    /// ApplicationDbContext - Entity Framework Core database context
+    /// Manages database connections and entity configurations
+    /// </summary>
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)

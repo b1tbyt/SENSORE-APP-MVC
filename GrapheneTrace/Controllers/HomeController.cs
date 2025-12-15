@@ -1,21 +1,27 @@
-﻿using GrapheneTrace.Models;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace GrapheneTrace.Controllers
 {
+    /// <summary>
+    /// HomeController - Landing page and public routes.
+    /// </summary>
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
-
         public IActionResult Index()
         {
-            return RedirectToAction("Login", "Account");
+            // If user is authenticated, redirect to their dashboard
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                return role switch
+                {
+                    "Admin" => RedirectToAction("Index", "Admin"),
+                    "Clinician" => RedirectToAction("Index", "Clinician"),
+                    "Patient" => RedirectToAction("Index", "Patient"),
+                    _ => View()
+                };
+            }
+            return View();
         }
 
         public IActionResult Privacy()
@@ -23,10 +29,9 @@ namespace GrapheneTrace.Controllers
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View();
         }
     }
 }

@@ -3,7 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GrapheneTrace.Models
 {
-  
+    /// <summary>
+    /// PatientClinician - junction table for many-to-many relationship
+    /// Tracks which patients are assigned to which clinicians
+    /// </summary>
     public class PatientClinician
     {
         [Key]

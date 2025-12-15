@@ -3,7 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GrapheneTrace.Models
 {
- 
+    /// <summary>
+    /// Base User class - parent class for all user types (Patient, Clinician, Admin)
+    /// Uses Table-Per-Hierarchy (TPH) inheritance strategy
+    /// </summary>
     public class User
     {
         [Key]

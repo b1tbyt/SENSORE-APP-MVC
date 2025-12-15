@@ -1,69 +1,155 @@
-﻿
-@model GrapheneTrace.Models.LoginViewModel
+﻿@model GrapheneTrace.Models.LoginViewModel
 @{
     ViewData["Title"] = "Login";
+    Layout = null;
 }
 
-<div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="text-center" style="width:400px;">
-        <img src="~/images/medtech logo.png" asp-append-version="true" alt="Logo" width="60" class="mb-3" />
-        <h2 class="fw-bold">MedTech</h2>
-        <p class="text-muted">Pressure Ulcer Prevention System</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - GrapheneTrace Sensore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        <form method="post" class="card p-4 shadow-sm border-0">
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger text-center p-2 mb-3">
-                    <strong>Error:</strong> @ViewBag.Error
-                </div>
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+            .login-header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 0.5rem;
             }
-            <div class="form-group mb-3 text-start">
-                <label class="fw-semibold">Email</label>
-                <input asp-for="Email" type="email" class="form-control" placeholder="Enter your email" required />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
 
-            <div class="form-group mb-3 text-start">
-                <label class="fw-semibold">Password</label>
-                <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" required />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+            .login-header p {
+                opacity: 0.8;
+                margin: 0;
+            }
 
-            <div class="form-group mb-4 text-start">
-                <label class="fw-semibold">Login As</label>
-                <select asp-for="Role" class="form-select">
-                    <option value="">Select Role (Optional)</option>
-                    <option value="Patient">Patient</option>
-                    <option value="Clinician">Clinician</option>
-                    <option value="Admin">Administrator</option>
-                </select>
-            </div>
+        .login-body {
+            padding: 2rem;
+        }
 
-            <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
-        </form>
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+        }
 
-        <div class="card mt-4 p-3 shadow-sm border-0">
-            <h5 class="fw-semibold mb-3">Quick Demo Login</h5>
+            .form-control:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            }
 
-            <form method="post" asp-action="Login" class="mb-2">
-                <input type="hidden" name="Email" value="john.davis@patient.com" />
-                <input type="hidden" name="Password" value="Patient123!" />
-                <button type="submit" class="btn btn-outline-secondary w-100">John Smith (Patient Account)</button>
-            </form>
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
 
-            <form method="post" asp-action="Login" class="mb-2">
-                <input type="hidden" name="Email" value="s.wilson@clinic.com" />
-                <input type="hidden" name="Password" value="Clinician123!" />
-                <button type="submit" class="btn btn-outline-secondary w-100">Dr. Sarah Wilson (Clinician Account)</button>
-            </form>
+            .btn-login:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            }
 
-            <form method="post" asp-action="Login">
-                <input type="hidden" name="Email" value="admin@sensore.com" />
-                <input type="hidden" name="Password" value="Admin123!" />
-                <button type="submit" class="btn btn-outline-secondary w-100">System Administrator</button>
+        .input-group-text {
+            background: transparent;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .credentials-hint {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-heartbeat fa-3x mb-3"></i>
+            <h1>Sensore</h1>
+            <p>Pressure Ulcer Prevention System</p>
+        </div>
+        <div class="login-body">
+            <form asp-action="Login" method="post">
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger py-2">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        @Html.ValidationSummary(false, "", new { @class = "mb-0" })
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-semibold">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
+                        <input asp-for="Email" class="form-control" placeholder="Enter your email" autofocus />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                        <input asp-for="Password" class="form-control" placeholder="Enter your password" />
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                </button>
+
+                <div class="credentials-hint">
+                    <p class="mb-1 fw-semibold"><i class="fas fa-info-circle me-1"></i>Demo Credentials:</p>
+                    <code>admin@sensore.com</code> / <code>Admin123!</code>
+                </div>
             </form>
         </div>
-
-        <footer class="mt-4 text-muted small">© 2025 Sensore • MedTech • Cambridge</footer>
     </div>
-</div>
+</body>
+</html>

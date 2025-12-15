@@ -1,114 +1,168 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using GrapheneTrace.Data;
-using GrapheneTrace.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using GrapheneTrace.Data;
+using GrapheneTrace.Models;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace GrapheneTrace.Controllers
 {
+    /// <summary>
+    /// AccountController - Handles user authentication.
+    /// </summary>
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context, ILogger<AccountController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET: /Account/Login
+        /// <summary>
+        /// GET: Account/Login
+        /// </summary>
         [HttpGet]
-        public IActionResult Login()
+        public IActionResult Login(string? returnUrl = null)
         {
-            // If they are already logged in, redirect them to Home
-            if (User.Identity!.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToRoleDashboard();
             }
-            return View();
+            ViewBag.ReturnUrl = returnUrl;
+            return View(new LoginViewModel());
         }
 
-        // POST: /Account/Login
+        /// <summary>
+        /// POST: Account/Login
+        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Error = "Incorrect email or password. Please try again.";
                 return View(model);
             }
 
-            string hashedPassword = HashPassword(model.Password);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == model.Email.ToLower().Trim());
 
-            // 1. Check if user is an Admin
-            var admin = _context.Admins.FirstOrDefault(u => u.Email == model.Email && u.PasswordHash == hashedPassword);
-            if (admin != null)
+            if (user == null)
             {
-                await CreateSession(admin.Email, "Admin", admin.FirstName);
-                return RedirectToAction("Index", "Admin");
+                ModelState.AddModelError("", "Invalid email or password.");
+                return View(model);
             }
 
-            // 2. Check if user is a Clinician
-            var clinician = _context.Clinicians.FirstOrDefault(u => u.Email == model.Email && u.PasswordHash == hashedPassword);
-            if (clinician != null)
+            if (!user.IsActive)
             {
-                await CreateSession(clinician.Email, "Clinician", clinician.FirstName);
-                return RedirectToAction("Index", "Home"); // Change to Clinician Dashboard later
+                ModelState.AddModelError("", "Account is deactivated.");
+                return View(model);
             }
 
-            // 3. Check if user is a Patient
-            var patient = _context.Patients.FirstOrDefault(u => u.Email == model.Email && u.PasswordHash == hashedPassword);
-            if (patient != null)
+            if (user.PasswordHash != HashPassword(model.Password))
             {
-                await CreateSession(patient.Email, "Patient", patient.FirstName);
-                return RedirectToAction("Index", "Patient"); // Goes to Patient Dashboard
+                ModelState.AddModelError("", "Invalid email or password.");
+                return View(model);
             }
 
-            
-            ModelState.AddModelError("", "Invalid login attempt.");
-
-            // THIS IS THE LINE YOU WERE MISSING:
-            ViewBag.Error = "Incorrect email or password. Please try again.";
-
-            return View(model);
-        }
-
-        // GET: /Account/Logout
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login", "Account");
-        }
-
-        // Helper to Create the Login Cookie
-        private async Task CreateSession(string email, string role, string name)
-        {
+            // Create claims
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, email),
-                new Claim(ClaimTypes.Role, role),
-                new Claim("FullName", name)
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.GivenName, user.FirstName),
+                new Claim(ClaimTypes.Surname, user.LastName),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("FullName", $"{user.FirstName} {user.LastName}")
             };
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = model.RememberMe,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                });
+
+            _logger.LogInformation("User {Email} logged in as {Role}", user.Email, user.Role);
+
+            // Create audit log
+            _context.AuditLogs.Add(new AuditLog
+            {
+                Action = "USER_LOGIN",
+                Details = $"User logged in: {user.FirstName} {user.LastName} ({user.Role})",
+                PerformedBy = user.Email,
+                Timestamp = DateTime.Now,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown"
+            });
+            await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToRoleDashboard(user.Role);
         }
 
-        // Helper to Match your Seed Data Hashing
-        private string HashPassword(string password)
+        /// <summary>
+        /// Account/Logout
+        /// </summary>
+        public async Task<IActionResult> Logout()
         {
-            using (SHA256 sha256 = SHA256.Create())
+            var email = User.Identity?.Name;
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!string.IsNullOrEmpty(email))
             {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes)
+                _context.AuditLogs.Add(new AuditLog
                 {
-                    sb.Append(b.ToString("x2"));
-                }
-                return sb.ToString();
+                    Action = "USER_LOGOUT",
+                    Details = $"User logged out: {email}",
+                    PerformedBy = email,
+                    Timestamp = DateTime.Now,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown"
+                });
+                await _context.SaveChangesAsync();
             }
+
+            return RedirectToAction("Login");
+        }
+
+        /// <summary>
+        /// GET: Account/AccessDenied
+        /// </summary>
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        private IActionResult RedirectToRoleDashboard(string? role = null)
+        {
+            role ??= User.FindFirst(ClaimTypes.Role)?.Value;
+            return role switch
+            {
+                "Admin" => RedirectToAction("Index", "Admin"),
+                "Clinician" => RedirectToAction("Index", "Clinician"),
+                "Patient" => RedirectToAction("Index", "Patient"),
+                _ => RedirectToAction("Index", "Home")
+            };
+        }
+
+        private static string HashPassword(string password)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToHexString(bytes).ToLower();
         }
     }
 }
