@@ -256,8 +256,20 @@
                                 <div class="btn-group">
                                     <a asp-action="Edit" asp-route-id="@user.UserId" class="action-btn btn btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
                                     <a asp-action="Details" asp-route-id="@user.UserId" class="action-btn btn btn-outline-info" title="Details"><i class="fas fa-eye"></i></a>
-                                    <button class="action-btn btn btn-outline-warning" onclick="toggleUserStatus(@user.UserId, '@user.FirstName @user.LastName')" title="Toggle Status"><i class="fas fa-user-slash"></i></button>
-                                    <button class="action-btn btn btn-outline-danger" onclick="confirmDelete(@user.UserId, '@user.FirstName @user.LastName')" title="Delete"><i class="fas fa-trash"></i></button>
+
+                                    <form asp-action="Delete" asp-route-id="@user.UserId" method="post" style="display:inline;">
+                                        <button type="submit" class="action-btn btn btn-outline-warning" title="Deactivate"
+                                                onclick="return confirm('Confirm: Deactivate this user?');">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="HardDelete" asp-route-id="@user.UserId" method="post" style="display:inline;">
+                                        <button type="submit" class="action-btn btn btn-outline-danger" title="Delete Permanently"
+                                                onclick="return confirm('WARNING: This will delete the user FOREVER. Continue?');">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -338,67 +350,121 @@
 </div>
 
 @section Scripts {
-<script>
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <text>
-        Swal.fire({ icon: 'success', title: 'Success!', text: '@TempData["SuccessMessage"]', timer: 3000, showConfirmButton: false, toast: true, position: 'top-end' });
-        </text>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <text>
-        Swal.fire({ icon: 'error', title: 'Error', text: '@TempData["ErrorMessage"]' });
-        </text>
-    }
+    <script>
+        // 1. SHOW SUCCESS/ERROR MESSAGES FROM CONTROLLER
+        @if (TempData["SuccessMessage"] != null)
+        {
+                <text>
+                Swal.fire({ icon: 'success', title: 'Success!', text: '@TempData["SuccessMessage"]', timer: 3000, showConfirmButton: false, toast: true, position: 'top-end' });
+                </text>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+                <text>
+                Swal.fire({ icon: 'error', title: 'Error', text: '@TempData["ErrorMessage"]' });
+                </text>
+        }
 
-    function confirmDelete(userId, userName) {
-        Swal.fire({
-            title: 'Delete User?',
-            html: `<p>Are you sure you want to delete <strong>${userName}</strong>?</p><div class="mt-3"><button class="btn btn-warning me-2" onclick="softDelete(${userId})"><i class="fas fa-user-slash me-1"></i>Deactivate</button><button class="btn btn-danger" onclick="hardDelete(${userId})"><i class="fas fa-trash me-1"></i>Delete Permanently</button></div>`,
-            icon: 'warning', showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Cancel'
-        });
-    }
+        // 2. FIXED CONFIRM DELETE FUNCTION (Using Native Swal Buttons)
+        function confirmDelete(userId, userName) {
+            Swal.fire({
+                title: 'Delete User?',
+                text: `Are you sure you want to delete ${userName}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true, // This enables the second button
+                confirmButtonColor: '#f0ad4e', // Yellow for Deactivate
+                denyButtonColor: '#d9534f',    // Red for Hard Delete
+                cancelButtonColor: '#6c757d',  // Grey for Cancel
+                confirmButtonText: '<i class="fas fa-user-slash"></i> Deactivate',
+                denyButtonText: '<i class="fas fa-trash"></i> Delete Permanently',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // User clicked YELLOW "Deactivate" button
+                    softDelete(userId);
+                } else if (result.isDenied) {
+                    // User clicked RED "Delete Permanently" button
+                    hardDelete(userId);
+                }
+            });
+        }
 
-    function softDelete(userId) {
-        Swal.close();
-        $.post('@Url.Action("Delete")', { id: userId }, function(response) {
-            if (response.success) { Swal.fire({ icon: 'success', title: 'Deactivated', text: response.message, timer: 2000 }).then(() => location.reload()); }
-            else { Swal.fire('Error', response.message, 'error'); }
-        }).fail(function() { Swal.fire('Error', 'An error occurred', 'error'); });
-    }
+        // 3. SOFT DELETE (Deactivate)
+        function softDelete(userId) {
+            $.post('@Url.Action("Delete")', { id: userId }, function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deactivated',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload(); // <--- THIS REFRESHES THE PAGE AUTOMATICALLY
+                    });
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            }).fail(function() {
+                Swal.fire('Error', 'Server connection failed. Check console.', 'error');
+            });
+        }
 
-    function hardDelete(userId) {
-        Swal.fire({ title: 'Permanent Delete?', text: 'This CANNOT be undone!', icon: 'error', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Delete Forever' }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('@Url.Action("HardDelete")', { id: userId }, function(response) {
-                    if (response.success) { Swal.fire('Deleted!', response.message, 'success').then(() => location.reload()); }
-                    else { Swal.fire('Error', response.message, 'error'); }
-                });
-            }
-        });
-    }
+        // 4. HARD DELETE (Permanent)
+        function hardDelete(userId) {
+            Swal.fire({
+                title: 'Permanent Delete?',
+                text: 'This CANNOT be undone!',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, Delete Forever'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("HardDelete")', { id: userId }, function(response) {
+                        if (response.success) {
+                            Swal.fire('Deleted!', response.message, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
 
-    function toggleUserStatus(userId, userName) {
-        Swal.fire({ title: 'Toggle Status?', text: `Change status for ${userName}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Yes' }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('@Url.Action("ToggleStatus")/' + userId, function(response) {
-                    if (response.success) { Swal.fire({ icon: 'success', title: 'Updated', text: response.message, timer: 2000 }).then(() => location.reload()); }
-                    else { Swal.fire('Error', response.message, 'error'); }
-                });
-            }
-        });
-    }
+        // 5. TOGGLE STATUS (Quick Action)
+        function toggleUserStatus(userId, userName) {
+            Swal.fire({
+                title: 'Toggle Status?',
+                text: `Change status for ${userName}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("ToggleStatus")/' + userId, function(response) {
+                        if (response.success) {
+                            Swal.fire({ icon: 'success', title: 'Updated', text: response.message, timer: 1500, showConfirmButton: false }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
 
-    function refreshStats() {
-        $.get('@Url.Action("GetUserStats")', function(data) {
-            $('#stat-patients').text(data.totalPatients);
-            $('#stat-clinicians').text(data.totalClinicians);
-            $('#stat-admins').text(data.totalAdmins);
-            Swal.fire({ icon: 'success', title: 'Refreshed!', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
-        });
-    }
+        // 6. REFRESH STATS
+        function refreshStats() {
+            $.get('@Url.Action("GetUserStats")', function(data) {
+                $('#stat-patients').text(data.totalPatients);
+                $('#stat-clinicians').text(data.totalClinicians);
+                $('#stat-admins').text(data.totalAdmins);
+                Swal.fire({ icon: 'success', title: 'Refreshed!', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
+            });
+        }
 
-    setInterval(function() { document.getElementById('serverTime').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); }, 1000);
-</script>
+        // Clock
+        setInterval(function() { document.getElementById('serverTime').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); }, 1000);
+    </script>
 }

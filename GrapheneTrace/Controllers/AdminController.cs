@@ -28,8 +28,8 @@ namespace GrapheneTrace.Controllers
     /// - Password hashing using SHA256
     /// - Soft delete to preserve data integrity
     /// 
-    /// Author: [Your Name]
-    /// Last Modified: December 2025
+    /// Author: 2402966
+    /// Last Modified: 12 December 2025
     /// </summary>
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
@@ -504,7 +504,7 @@ namespace GrapheneTrace.Controllers
         /// Soft delete (deactivation).
         /// </summary>
         [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
+       // [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -563,7 +563,7 @@ namespace GrapheneTrace.Controllers
         /// Permanent deletion.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        //[ValidateAntiForgeryToken]
         public async Task<IActionResult> HardDelete(int id)
         {
             var user = await _context.Users.FindAsync(id);

@@ -16,7 +16,7 @@ namespace GrapheneTrace.Data
     /// USAGE:
     /// Call ApplicationDbSeeder.Seed(context) in Program.cs after EnsureCreated().
     /// 
-    /// Author: GrapheneTrace Team
+    /// Author: 2402966
     /// </summary>
     public static class ApplicationDbSeeder
     {
@@ -90,7 +90,7 @@ namespace GrapheneTrace.Data
                 LastName = "Davis",
                 PasswordHash = HashPassword("Patient123!"),
                 Role = "Patient",
-                IsActive = true,
+                IsActive =true,
                 CreatedAt = DateTime.Now.AddDays(-10),
                 MedicalCondition = "Type 2 Diabetes, Limited Mobility",
                 MobilityLevel = "Limited"
